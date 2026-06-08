@@ -19,16 +19,7 @@ RealEssate_forecast/
 │   └── config.yaml                    # Configuration settings
 ├── data/
 │   ├── data_source.md                 # Data source documentation
-│   ├── test.csv                       # Test dataset
-│   └── train/                         # Training data directory
-│       ├── city_indexes.csv
-│       ├── city_search_index.csv
-│       ├── land_transactions_nearby_sectors.csv
-│       ├── land_transactions.csv
-│       ├── new_house_transactions_nearby_sectors.csv
-│       ├── new_house_transactions.csv
-│       ├── pre_owned_house_transactions_nearby_sectors.csv
-│       └── pre_owned_house_transactions.csv
+│   
 ├── docker/                            # Docker configuration
 │   ├── api.Dockerfile
 │   ├── app.Dockerfile
@@ -47,12 +38,6 @@ RealEssate_forecast/
 │   ├── main_nb.ipynb                  # Main analysis notebook
 │   ├── submission.csv
 │   ├── variable_dictionary.md
-│   └── catboost_info/                 # CatBoost training information
-│       ├── catboost_training.json
-│       ├── learn_error.tsv
-│       ├── time_left.tsv
-│       └── learn/
-│           └── events.out.tfevents
 ├── src/                               # Source code
 │   ├── api/                           # API service
 │   │   ├── main.py
