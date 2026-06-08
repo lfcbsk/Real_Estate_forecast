@@ -217,6 +217,13 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Project-specific ignores
+# CatBoost training information
+notebooks/catboost_info/
+
+# Submission files
+submission.csv
+notebooks/submission.csv
 
 # data in kaggle competition
 *.csv
