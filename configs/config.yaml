@@ -1,0 +1,14 @@
+data:
+  train_dir: "../data/train/"
+
+target:
+  column: amount_new_house_transactions
+  transform: log1p
+cv:
+  n_splits: 5
+
+optimization:
+  n_trials: 50
+
+general:
+  random_seed: 42
