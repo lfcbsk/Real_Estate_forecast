@@ -7,6 +7,18 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+.env
+.env.local
+.env.*
+
+# Build artifacts
+dist/
 .Python
 build/
 develop-eggs/
@@ -35,7 +47,20 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+# Logs
+*.log
 
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -48,6 +73,10 @@ coverage.xml
 *.cover
 *.py.cover
 .hypothesis/
+coverage/
+htmlcov/
+
+# Testing
 .pytest_cache/
 cover/
 

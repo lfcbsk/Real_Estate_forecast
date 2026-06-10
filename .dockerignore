@@ -1,0 +1,46 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints
+
+# MLflow
+mlruns/
+mlflow.db
+
+# Data (optional - mount as volume instead)
+data/*.csv
+data/*.xlsx
+
+# Models (will be generated)
+models/*.onnx
+models/*.pkl
+
+# Logs
+*.log
+logs/
+
+# Docker
+docker-compose.override.yml

@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/api.Dockerfile
+    container_name: realestate-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ..//app/data
+      - ../models:/app/models
+      - ../mlruns:/app/mlruns
+    environment:
+      - PYTHONPATH=/app
+      - MLFLOW_TRACKING_URI=sqlite:///app/mlruns.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - realestate-network
+
+  streamlit:
+    build:
+      context: ..
+      dockerfile: docker/app.Dockerfile
+    container_name: realestate-dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ..//app/data
+      - ../models:/app/models
+      - ../mlruns:/app/mlruns
+    environment:
+      - PYTHONPATH=/app
+      - MLFLOW_TRACKING_URI=sqlite:///app/mlruns.db
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - realestate-network
+
+networks:
+  realestate-network:
+    driver: bridge
+
+volumes:
+  mlruns:
+  models:
