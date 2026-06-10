@@ -8,7 +8,7 @@ from src.pipeline.features import (
     create_training_features, get_valid_features,
     apply_zero_sector_rule, build_zero_sector_mask,
 )
-
+from pathlib import Path
 from src.pipeline.ingest_preprocess import run as ingest_run
 import mlflow
 import mlflow.catboost
@@ -437,6 +437,16 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
                 artifact_path="catboost_production_model"
             )
 
+    mlflow.end_run()
+
+    Path("save_model").mkdir(parents=True,exist_ok=True)
+
+    production_model.save_model(
+        "save_model/model.onnx",
+        format="onnx"
+    )
+
+    print("✓ ONNX model saved: artifacts/model.onnx")
     return {
         "best_model": "catboost",
         "final_model": production_model,
@@ -449,3 +459,30 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
         "mlflow_run_id": parent_run.info.run_id
     }
 
+if __name__ == "__main__":
+
+    results = run_pipeline(
+        tune=True,
+        n_trials=N_TRIALS
+    )
+
+    print("\n" + "=" * 80)
+    print("PIPELINE COMPLETED")
+    print("=" * 80)
+
+    print(
+        f"Best model: {results['best_model']}"
+    )
+
+    print(
+        f"MLflow Run ID: {results['mlflow_run_id']}"
+    )
+
+    if "test_results" in results:
+        print("\nHoldout Test Results")
+        print("-" * 40)
+
+        for metric, value in results["test_results"].items():
+            print(
+                f"{metric:<20}: {value:.4f}"
+            )
