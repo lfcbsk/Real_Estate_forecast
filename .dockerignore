@@ -13,6 +13,9 @@ __pycache__/
 env/
 venv/
 ENV/
+*.egg-info
+dist/
+build/
 .pytest_cache/
 .coverage
 htmlcov/
@@ -25,6 +28,12 @@ htmlcov/
 
 # Jupyter
 .ipynb_checkpoints
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
 
 # MLflow
 mlruns/
@@ -41,6 +50,10 @@ models/*.pkl
 # Logs
 *.log
 logs/
+
+# Misc
+.DS_Store
+Thumbs.db
 
 # Docker
 docker-compose.override.yml
