@@ -75,7 +75,10 @@ def recursive_forecast(
         feats = get_valid_features(month_feat)
         X = month_feat[feats].fillna(0)
 
-        preds = np.clip(model.predict(X), 0, None)
+        # model.predict (ModelRegistry.predict) tự lo việc chọn đúng
+        # cột feature theo self.features và cast sang float32 cho ONNX,
+        # nên ở đây chỉ cần truyền DataFrame đã fillna(0).
+        preds = np.clip(model.predict(X), 0, None).reshape(-1)
 
         # Fill predictions back into month_rows and append to history
         month_rows = month_rows.reset_index(drop=True)

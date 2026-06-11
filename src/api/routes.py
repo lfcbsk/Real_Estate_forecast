@@ -2,7 +2,6 @@
 
 import io
 import logging
-from datetime import datetime
 from typing import Optional, List
 import pandas as pd
 from fastapi import APIRouter, UploadFile, File, HTTPException, Query
@@ -89,6 +88,15 @@ async def get_forecast(request: ForecastRequest):
             results={"zero_sectors": registry.zero_sectors},
             n_months=request.n_months,
         )
+
+        # Lọc theo sectors nếu người dùng chỉ định
+        if request.sectors:
+            df_forecast = df_forecast[df_forecast["sector"].isin(request.sectors)]
+            if df_forecast.empty:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"No matching sectors found for: {request.sectors}",
+                )
 
         predictions = []
         for _, row in df_forecast.iterrows():
@@ -290,6 +298,7 @@ async def get_drift_report(reference_period: Optional[str] = Query(None, descrip
     """Get drift detection report."""
     try:
         from src.monitoring.detect_drift import detect_data_drift
+        from src.pipeline.predict import TARGET_LOG
 
         train_data = get_train_data()
         if train_data is None:
@@ -301,7 +310,13 @@ async def get_drift_report(reference_period: Optional[str] = Query(None, descrip
                 recommendation="No data available for drift detection",
             )
 
-        result = detect_data_drift(train_data)
+        registry = get_model_registry()
+
+        result = detect_data_drift(
+            train_data,
+            model=registry,
+            target_col=TARGET_LOG,
+        )
 
         return DriftReport(
             drift_detected=result.get("drift_detected", False),
