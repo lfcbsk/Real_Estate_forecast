@@ -113,6 +113,8 @@ async def get_forecast(request: ForecastRequest):
             predictions=predictions,
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Forecast error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
