@@ -67,7 +67,7 @@ def sample_train_df():
             })
     return pd.DataFrame(data)
 
-
+@pytest.mark.unit
 def test_assign_regime():
     """Test gán regime theo thời gian."""
     assert assign_regime(pd.Timestamp("2019-06-01")) == 0
@@ -75,7 +75,7 @@ def test_assign_regime():
     assert assign_regime(pd.Timestamp("2021-06-01")) == 2
     assert assign_regime(pd.Timestamp("2023-01-01")) == 3
 
-
+@pytest.mark.unit
 def test_build_sector_profile(sample_train_df):
     """Test build sector profile."""
     profile = build_sector_profile(sample_train_df)
@@ -88,7 +88,7 @@ def test_build_sector_profile(sample_train_df):
     for sector_type in profile.values():
         assert sector_type in valid_types
 
-
+@pytest.mark.unit
 def test_build_zero_sector_mask():
     df = pd.DataFrame({
         "sector": [1] * 20 + [2] * 20 + [52] * 20,
@@ -101,7 +101,7 @@ def test_build_zero_sector_mask():
     assert 1 in zero_sectors
     assert 52 in zero_sectors
 
-
+@pytest.mark.unit
 def test_apply_zero_sector_rule():
     """Test áp dụng zero sector rule."""
     predictions = np.array([100, 200, 300, 400, 500])
@@ -117,7 +117,7 @@ def test_apply_zero_sector_rule():
     assert result[3] == 400  # sector 2
     assert result[4] == 0  # sector 1
 
-
+@pytest.mark.unit
 def test_compute_sector_stats(sample_train_df):
     """Test tính toán thống kê theo sector."""
     stats = compute_sector_stats(sample_train_df, "log_amount_new_house_transactions")
@@ -131,7 +131,7 @@ def test_compute_sector_stats(sample_train_df):
     assert isinstance(stats["mean"], dict)
     assert len(stats["mean"]) == sample_train_df["sector"].nunique()
 
-
+@pytest.mark.unit
 def test_create_training_features_basic(sample_train_df):
     """Test tạo training features cơ bản."""
     sector_stats = compute_sector_stats(sample_train_df, "log_amount_new_house_transactions")
@@ -160,7 +160,7 @@ def test_create_training_features_basic(sample_train_df):
     for feat in expected_features:
         assert feat in df_featured.columns, f"Feature '{feat}' not found"
 
-
+@pytest.mark.unit
 def test_create_training_features_no_nan_when_keep_nan_false(sample_train_df):
     """Test không có NaN khi keep_nan=False."""
     sector_stats = compute_sector_stats(sample_train_df, "log_amount_new_house_transactions")
@@ -179,7 +179,7 @@ def test_create_training_features_no_nan_when_keep_nan_false(sample_train_df):
     assert nan_count == 0, f"Found {nan_count} NaN values in features"
 
 
-
+@pytest.mark.unit
 def test_cyclical_encoding():
     df = pd.DataFrame({
         "date": pd.date_range("2020-01-01", periods=12, freq="MS"),

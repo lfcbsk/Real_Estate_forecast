@@ -5,8 +5,16 @@ from fastapi.testclient import TestClient
 from unittest.mock import patch, MagicMock
 import pandas as pd
 import numpy as np
-
 from src.api.main import app
+
+@pytest.mark.integration
+def test_health_check(api_client):
+    response = api_client.get("/api/v1/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+
+@patch("src.api.routes.get_model_registry")
+@patch("src.api.routes.get_train_data")
 
 
 @pytest.fixture
