@@ -3,6 +3,7 @@ app.py  –  House Transaction Forecast · Streamlit App
 """
 
 import streamlit as st
+import mlflow
 
 st.set_page_config(
     page_title="House Forecast",
@@ -86,44 +87,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Navigation state ──────────────────────────────────────────────────────────
-if "page" not in st.session_state:
-    st.session_state.page = "predict"
-
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("## 🏠 House Forecast")
-    st.markdown("<div style='font-size:12px;color:#475569;margin-bottom:20px'>Real-estate transaction forecasting</div>", unsafe_allow_html=True)
-
-    st.markdown("<div class='section-header'>Navigation</div>", unsafe_allow_html=True)
-
-    pages = {
-        "predict":  ("📤", "Upload & Predict"),
-        "forecast": ("📈", "Sector Forecast"),
-    }
-    for key, (icon, label) in pages.items():
-        active = "active" if st.session_state.page == key else ""
-        if st.button(f"{icon}  {label}", key=f"nav_{key}", use_container_width=True):
-            st.session_state.page = key
-            st.rerun()
-
-    # MLflow baseline metrics (nếu có)
-    st.markdown("<div class='section-header'>Baseline Metrics</div>", unsafe_allow_html=True)
-    _show_mlflow_sidebar()
-
-# ── Route pages ───────────────────────────────────────────────────────────────
-if st.session_state.page == "predict":
-    from pages_content.predict import render
-    render()
-elif st.session_state.page == "forecast":
-    from pages_content.forecast import render
-    render()
-
-
+# ── 3. HELPER FUNCTIONS ───────────────────────
 def _show_mlflow_sidebar():
     """Hiển thị baseline metrics từ MLflow run gần nhất."""
     try:
-        import mlflow
         client = mlflow.tracking.MlflowClient()
         exp = client.get_experiment_by_name("catboost_timeseries")
         if exp is None:
@@ -170,3 +137,37 @@ def _show_mlflow_sidebar():
         )
     except Exception:
         st.caption("MLflow is disable.")
+# ── Navigation state ──────────────────────────────────────────────────────────
+if "page" not in st.session_state:
+    st.session_state.page = "predict"
+
+# ── Sidebar ───────────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("## 🏠 House Forecast")
+    st.markdown("<div style='font-size:12px;color:#475569;margin-bottom:20px'>Real-estate transaction forecasting</div>", unsafe_allow_html=True)
+
+    st.markdown("<div class='section-header'>Navigation</div>", unsafe_allow_html=True)
+
+    pages = {
+        "predict":  ("📤", "Upload & Predict"),
+        "forecast": ("📈", "Sector Forecast"),
+    }
+    for key, (icon, label) in pages.items():
+        active = "active" if st.session_state.page == key else ""
+        if st.button(f"{icon}  {label}", key=f"nav_{key}", use_container_width=True):
+            st.session_state.page = key
+            st.rerun()
+
+    # MLflow baseline metrics (nếu có)
+    st.markdown("<div class='section-header'>Baseline Metrics</div>", unsafe_allow_html=True)
+    _show_mlflow_sidebar()
+
+# ── Route pages ───────────────────────────────────────────────────────────────
+if st.session_state.page == "predict":
+    from pages_content.predict import render
+    render()
+elif st.session_state.page == "forecast":
+    from pages_content.forecast import render
+    render()
+
+
