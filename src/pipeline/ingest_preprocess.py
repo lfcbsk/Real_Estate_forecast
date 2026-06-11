@@ -1,27 +1,3 @@
-"""
-ingest.py
----------
-Load, merge and handle missing value for  4 files CSV input.
-
-4 files input (web upload):
-    1. new_house_transactions.csv       
-    2. new_house_transactions_nearby.csv  
-    3. pre_owned_house_transactions.csv  
-
-Handling missing:
-    - Target / transaction counts  → 0  (no transaction = 0)
-    - Exogenous time-series        → ffill by sector,  then 0
-    - Cột số còn lại               → ffill by sector then 0
-
-Usage:
-    from ingest import load_and_merge
-    df = load_and_merge(
-        path_main    = "new_house_transactions.csv",
-        path_nearby  = "new_house_transactions_nearby.csv",
-        path_pre     = "pre_owned_house_transactions.csv",
-    )
-"""
-
 import pandas as pd
 import numpy as np
 from typing import Tuple
