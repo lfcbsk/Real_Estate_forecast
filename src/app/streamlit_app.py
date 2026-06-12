@@ -2,8 +2,8 @@
 app.py  –  House Transaction Forecast · Streamlit App
 """
 
-import streamlit as st
 import mlflow
+import streamlit as st
 
 st.set_page_config(
     page_title="House Forecast",
@@ -13,7 +13,8 @@ st.set_page_config(
 )
 
 # ── CSS ──────────────────────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(
+    """
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
@@ -85,7 +86,10 @@ st.markdown("""
     background: #1d4ed8 !important; border: none !important;
   }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
 
 # ── 3. HELPER FUNCTIONS ───────────────────────
 def _show_mlflow_sidebar():
@@ -114,11 +118,11 @@ def _show_mlflow_sidebar():
 
         items = [
             ("Competition Score", "holdout_competition_score"),
-            ("MAE",               "holdout_mae"),
-            ("RMSE",              "holdout_rmse"),
-            ("MAPE",              "holdout_mape"),
-            ("R²",                "holdout_r2"),
-            ("Bad Rate",          "holdout_bad_rate"),
+            ("MAE", "holdout_mae"),
+            ("RMSE", "holdout_rmse"),
+            ("MAPE", "holdout_mape"),
+            ("R²", "holdout_r2"),
+            ("Bad Rate", "holdout_bad_rate"),
         ]
         for lbl, key in items:
             val = _fmt(key)
@@ -137,6 +141,8 @@ def _show_mlflow_sidebar():
         )
     except Exception:
         st.caption("MLflow is disable.")
+
+
 # ── Navigation state ──────────────────────────────────────────────────────────
 if "page" not in st.session_state:
     st.session_state.page = "predict"
@@ -144,12 +150,15 @@ if "page" not in st.session_state:
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🏠 House Forecast")
-    st.markdown("<div style='font-size:12px;color:#475569;margin-bottom:20px'>Real-estate transaction forecasting</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div style='font-size:12px;color:#475569;margin-bottom:20px'>Real-estate transaction forecasting</div>",
+        unsafe_allow_html=True,
+    )
 
     st.markdown("<div class='section-header'>Navigation</div>", unsafe_allow_html=True)
 
     pages = {
-        "predict":  ("📤", "Upload & Predict"),
+        "predict": ("📤", "Upload & Predict"),
         "forecast": ("📈", "Sector Forecast"),
     }
     for key, (icon, label) in pages.items():
@@ -159,15 +168,17 @@ with st.sidebar:
             st.rerun()
 
     # MLflow baseline metrics (nếu có)
-    st.markdown("<div class='section-header'>Baseline Metrics</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='section-header'>Baseline Metrics</div>", unsafe_allow_html=True
+    )
     _show_mlflow_sidebar()
 
 # ── Route pages ───────────────────────────────────────────────────────────────
 if st.session_state.page == "predict":
     from pages_content.predict import render
+
     render()
 elif st.session_state.page == "forecast":
     from pages_content.forecast import render
+
     render()
-
-

@@ -2,9 +2,10 @@
 
 import logging
 from contextlib import asynccontextmanager
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
 
 from src.api.routes import router
 
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
 
     try:
         from src.models.model_registry import ModelRegistry
+
         _ = ModelRegistry()
         logger.info("Model registry loaded successfully")
     except Exception as e:

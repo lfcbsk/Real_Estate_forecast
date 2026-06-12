@@ -3,6 +3,7 @@ Drift check -> retrain decision -> registry gate orchestration.
 
 Run after new data arrives to decide whether to retrain and promote a model.
 """
+
 from __future__ import annotations
 
 import pickle
@@ -15,10 +16,10 @@ import pandas as pd
 from src.models.model_config import ModelConfig
 from src.models.retrain import retrain_model, save_artifacts, save_onnx_model
 from src.monitoring.detect_drift import (
+    analyze_feature_drift_stats,
     check_data_quality_drift,
     detect_concept_drift_comprehensive,
     detect_distribution_drift,
-    analyze_feature_drift_stats,
 )
 from src.monitoring.log_report import save_drift_report
 from src.monitoring.reference import load_reference_dataset, save_reference_dataset
@@ -53,7 +54,9 @@ class RegistryGate:
     @classmethod
     def from_config(cls) -> "RegistryGate":
         return cls(
-            min_competition_score=float(REGISTRY_CFG.get("min_competition_score", 0.55)),
+            min_competition_score=float(
+                REGISTRY_CFG.get("min_competition_score", 0.55)
+            ),
             min_r2=float(REGISTRY_CFG.get("min_r2", 0.0)),
             max_mape=float(REGISTRY_CFG.get("max_mape", 100.0)),
             require_improvement_over_current=bool(
@@ -103,7 +106,11 @@ def detect_drift_against_reference(
     drift_ratio = drifted_features_count / len(feature_cols) if feature_cols else 0.0
 
     label_report = None
-    if target_col and target_col in reference_df.columns and target_col in current_df.columns:
+    if (
+        target_col
+        and target_col in reference_df.columns
+        and target_col in current_df.columns
+    ):
         label_report = detect_distribution_drift(
             reference_df[target_col], current_df[target_col], "Target/Label", alpha
         )
@@ -131,7 +138,9 @@ def detect_drift_against_reference(
 
     if concept_flag or drift_ratio > 0.5 or quality_flag:
         severity = "high"
-        recommendation = "URGENT: Retrain model immediately. Check data pipeline for quality issues."
+        recommendation = (
+            "URGENT: Retrain model immediately. Check data pipeline for quality issues."
+        )
     elif drift_ratio > feature_ratio_threshold or (
         label_report and label_report["severity"] == "medium"
     ):
@@ -270,7 +279,9 @@ def run_orchestration(
     )
     feature_cols = get_valid_features(featured_train)
 
-    current_slice = df_test if len(df_test) > 0 else combined.tail(max(1, len(combined) // 5))
+    current_slice = (
+        df_test if len(df_test) > 0 else combined.tail(max(1, len(combined) // 5))
+    )
     featured_current = create_training_features(
         pd.concat([df_train, current_slice]).sort_values(["sector", "date"]),
         target_col=TARGET_LOG,
@@ -278,7 +289,9 @@ def run_orchestration(
         sector_profile=sector_profile,
         keep_nan=False,
     )
-    featured_current = featured_current[featured_current["date"].isin(current_slice["date"])]
+    featured_current = featured_current[
+        featured_current["date"].isin(current_slice["date"])
+    ]
 
     drift_report = detect_drift_against_reference(
         reference_df=reference_df,
@@ -327,7 +340,9 @@ def run_orchestration(
         return result
 
     zero_sectors, _ = build_zero_sector_mask(df_train)
-    artifacts = retrain_model(df_train, cat_params or {}, model_name="ORCHESTRATION RETRAIN")
+    artifacts = retrain_model(
+        df_train, cat_params or {}, model_name="ORCHESTRATION RETRAIN"
+    )
     eval_metrics = evaluate_holdout(
         model=artifacts["model"],
         train_df=df_train,
@@ -337,7 +352,9 @@ def run_orchestration(
     messages.append("Fast retrain completed (no Optuna tuning)")
 
     result.evaluation = eval_metrics
-    eligible, gate_messages = evaluate_for_registry(eval_metrics, current_metrics=current_metrics)
+    eligible, gate_messages = evaluate_for_registry(
+        eval_metrics, current_metrics=current_metrics
+    )
     result.registry_eligible = eligible
     result.messages.extend(gate_messages)
 
@@ -359,7 +376,9 @@ if __name__ == "__main__":
     import argparse
     import json
 
-    parser = argparse.ArgumentParser(description="Run drift -> retrain -> registry orchestration")
+    parser = argparse.ArgumentParser(
+        description="Run drift -> retrain -> registry orchestration"
+    )
     parser.add_argument("--tune", choices=["true", "false"], default="false")
     parser.add_argument("--promote", choices=["true", "false"], default="true")
     parser.add_argument("--n-trials", type=int, default=10)
@@ -371,14 +390,16 @@ if __name__ == "__main__":
         n_trials=args.n_trials,
     )
 
-    print(json.dumps(
-        {
-            "should_retrain": outcome.should_retrain,
-            "retrain_triggered": outcome.retrain_triggered,
-            "registry_eligible": outcome.registry_eligible,
-            "registry_promoted": outcome.registry_promoted,
-            "drift_severity": outcome.drift_report.get("severity"),
-            "messages": outcome.messages,
-        },
-        indent=2,
-    ))
+    print(
+        json.dumps(
+            {
+                "should_retrain": outcome.should_retrain,
+                "retrain_triggered": outcome.retrain_triggered,
+                "registry_eligible": outcome.registry_eligible,
+                "registry_promoted": outcome.registry_promoted,
+                "drift_severity": outcome.drift_report.get("severity"),
+                "messages": outcome.messages,
+            },
+            indent=2,
+        )
+    )

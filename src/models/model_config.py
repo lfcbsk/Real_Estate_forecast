@@ -9,22 +9,12 @@ class ModelConfig:
 
     MODEL_PATH: Path = ARTIFACT_DIR / "model.onnx"
 
-    FEATURE_LIST_PATH: Path = (
-        ARTIFACT_DIR / "feature_list.pkl"
-    )
+    FEATURE_LIST_PATH: Path = ARTIFACT_DIR / "feature_list.pkl"
 
-    SECTOR_STATS_PATH: Path = (
-        ARTIFACT_DIR / "sector_stats.pkl"
-    )
+    SECTOR_STATS_PATH: Path = ARTIFACT_DIR / "sector_stats.pkl"
 
-    SECTOR_PROFILE_PATH: Path = (
-        ARTIFACT_DIR / "sector_profile.pkl"
-    )
+    SECTOR_PROFILE_PATH: Path = ARTIFACT_DIR / "sector_profile.pkl"
 
-    ZERO_SECTOR_PATH: Path = (
-        ARTIFACT_DIR / "zero_sectors.pkl"
-    )
+    ZERO_SECTOR_PATH: Path = ARTIFACT_DIR / "zero_sectors.pkl"
 
-    REFERENCE_DATA_PATH: Path = (
-        ARTIFACT_DIR / "reference.parquet"
-    )
+    REFERENCE_DATA_PATH: Path = ARTIFACT_DIR / "reference.parquet"

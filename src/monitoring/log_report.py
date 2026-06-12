@@ -2,12 +2,11 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 # Cấu hình logging cơ bản (có thể điều chỉnh level thành INFO hoặc DEBUG)
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ def save_monitoring_report(
     model_name: str = "default_model",
     model_version: str = "v1.0.0",
     output_dir: str = "reports",
-    metadata: Dict[str, Any] = None
+    metadata: Dict[str, Any] = None,
 ) -> str:
     """
     Lưu báo cáo monitoring kèm theo metadata để dễ truy vết (traceability).
@@ -37,7 +36,7 @@ def save_monitoring_report(
             "model_name": model_name,
             "model_version": model_version,
             "evaluated_at": datetime.now().isoformat(),
-            "custom_metadata": metadata or {}
+            "custom_metadata": metadata or {},
         }
 
         # 4. Ghi file với error handling
@@ -77,15 +76,19 @@ def evaluate_retrain_decision(comprehensive_report: Dict[str, Any]) -> Dict[str,
     """
     summary = comprehensive_report.get("summary", {})
     details = comprehensive_report.get("details", {})
-    
+
     severity = comprehensive_report.get("severity", "low").lower()
     drift_ratio = summary.get("feature_drift_ratio", 0.0)
     concept_drift_detected = summary.get("concept_drift_detected", False)
     quality_issues_count = summary.get("data_quality_issues_count", 0)
-    
+
     # Lấy chi tiết MAE degradation nếu có
     concept_details = details.get("concept_drift", {})
-    mae_degradation = concept_details.get("mae_degradation_pct", 0.0) if isinstance(concept_details, dict) else 0.0
+    mae_degradation = (
+        concept_details.get("mae_degradation_pct", 0.0)
+        if isinstance(concept_details, dict)
+        else 0.0
+    )
 
     decision = "HOLD"  # Mặc định là giữ nguyên model
     reasons = []
@@ -95,44 +98,57 @@ def evaluate_retrain_decision(comprehensive_report: Dict[str, Any]) -> Dict[str,
     if quality_issues_count > 0:
         decision = "BLOCKED"
         priority = "CRITICAL"
-        reasons.append(f"Data quality issues detected ({quality_issues_count} issues). Fix data pipeline BEFORE retraining.")
+        reasons.append(
+            f"Data quality issues detected ({quality_issues_count} issues). Fix data pipeline BEFORE retraining."
+        )
         logger.warning("⚠️ Retrain BLOCKED due to data quality issues.")
 
     # --- RULE 2: Concept Drift (Hiệu suất giảm) ---
     elif concept_drift_detected or mae_degradation > 0.2:
         decision = "RETRAIN"
         priority = "HIGH"
-        reasons.append(f"Concept drift detected. MAE degraded by {mae_degradation:.1%}.")
+        reasons.append(
+            f"Concept drift detected. MAE degraded by {mae_degradation:.1%}."
+        )
 
     # --- RULE 3: Severe Feature/Label Drift ---
     elif severity == "high" or drift_ratio > 0.5:
         decision = "RETRAIN"
         priority = "HIGH"
-        reasons.append(f"High severity data drift detected ({drift_ratio:.1%} features affected).")
+        reasons.append(
+            f"High severity data drift detected ({drift_ratio:.1%} features affected)."
+        )
 
     # --- RULE 4: Moderate Drift (Cảnh báo) ---
     elif severity == "medium" or drift_ratio > 0.2:
         decision = "MONITOR"
         priority = "MEDIUM"
-        reasons.append("Moderate drift detected. Prepare retraining pipeline, but no immediate action required.")
+        reasons.append(
+            "Moderate drift detected. Prepare retraining pipeline, but no immediate action required."
+        )
 
     # --- RULE 5: Stable ---
     else:
-        reasons.append("System is stable. No significant drift or performance degradation.")
+        reasons.append(
+            "System is stable. No significant drift or performance degradation."
+        )
 
     result = {
-        "decision": decision,       # BLOCKED, RETRAIN, MONITOR, HOLD
-        "priority": priority,       # CRITICAL, HIGH, MEDIUM, LOW
+        "decision": decision,  # BLOCKED, RETRAIN, MONITOR, HOLD
+        "priority": priority,  # CRITICAL, HIGH, MEDIUM, LOW
         "reasons": reasons,
         "metrics_snapshot": {
             "drift_ratio": drift_ratio,
             "mae_degradation": mae_degradation,
-            "concept_drift": concept_drift_detected
-        }
+            "concept_drift": concept_drift_detected,
+        },
     }
-    
+
     # Log quyết định
     log_level = logging.WARNING if decision in ["BLOCKED", "RETRAIN"] else logging.INFO
-    logger.log(log_level, f"Retrain Decision: {result['decision']} | Priority: {result['priority']} | Reasons: {'; '.join(reasons)}")
-    
+    logger.log(
+        log_level,
+        f"Retrain Decision: {result['decision']} | Priority: {result['priority']} | Reasons: {'; '.join(reasons)}",
+    )
+
     return result

@@ -2,27 +2,27 @@
 
 import io
 import logging
-from typing import Optional, List
+from typing import  Optional
 import pandas as pd
 import mlflow
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from src.api.schemas import (
-    HealthResponse,
-    ForecastRequest,
-    ForecastResponse,
-    ForecastData,
-    PredictRequest,
-    PredictResponse,
-    UploadResponse,
-    SectorsResponse,
-    SectorInfo,
-    MetricsResponse,
-    MetricData,
     DriftReport,
     ErrorResponse,
+    ForecastData,
+    ForecastRequest,
+    ForecastResponse,
+    HealthResponse,
+    MetricData,
+    MetricsResponse,
+    PredictRequest,
+    PredictResponse,
+    SectorInfo,
+    SectorsResponse,
+    UploadResponse,
 )
-from src.pipeline.predict import forecast_next_year
 from src.monitoring.detect_drift import detect_data_drift
+from src.pipeline.predict import forecast_next_year
 from src.utils.config import load_config
 
 cfg = load_config()
@@ -30,11 +30,7 @@ cfg = load_config()
 TARGET = cfg["target"]["column"]
 TARGET_TRANSFORM = cfg["target"]["transform"]
 
-TARGET_LOG = (
-    f"log_{TARGET}"
-    if TARGET_TRANSFORM == "log1p"
-    else TARGET
-)
+TARGET_LOG = f"log_{TARGET}" if TARGET_TRANSFORM == "log1p" else TARGET
 
 
 logger = logging.getLogger(__name__)
@@ -50,6 +46,7 @@ def get_model_registry():
     global _model_registry
     if _model_registry is None:
         from src.models.model_registry import ModelRegistry
+
         _model_registry = ModelRegistry()
     return _model_registry
 
@@ -58,7 +55,6 @@ def get_train_data():
     """Load training data for forecasting."""
     global _train_data
     if _train_data is None:
-        import os
         from pathlib import Path
 
         train_dir = Path("data/train")
@@ -81,7 +77,10 @@ async def health_check():
 @router.post(
     "/forecast",
     response_model=ForecastResponse,
-    responses={200: {"description": "Successful forecast"}, 500: {"model": ErrorResponse}},
+    responses={
+        200: {"description": "Successful forecast"},
+        500: {"model": ErrorResponse},
+    },
 )
 async def get_forecast(request: ForecastRequest):
     """
@@ -95,7 +94,6 @@ async def get_forecast(request: ForecastRequest):
 
         if train_data is None or len(train_data) == 0:
             raise HTTPException(status_code=500, detail="Training data not available")
-
 
         df_forecast = forecast_next_year(
             df=train_data,
@@ -115,11 +113,13 @@ async def get_forecast(request: ForecastRequest):
 
         predictions = []
         for _, row in df_forecast.iterrows():
-            predictions.append(ForecastData(
-                date=row["date"],
-                sector=row["sector"],
-                pred_amount=int(row["pred_amount"]),
-            ))
+            predictions.append(
+                ForecastData(
+                    date=row["date"],
+                    sector=row["sector"],
+                    pred_amount=int(row["pred_amount"]),
+                )
+            )
 
         return ForecastResponse(
             status="success",
@@ -138,7 +138,10 @@ async def get_forecast(request: ForecastRequest):
 @router.post(
     "/predict",
     response_model=PredictResponse,
-    responses={200: {"description": "Successful prediction"}, 400: {"model": ErrorResponse}},
+    responses={
+        200: {"description": "Successful prediction"},
+        400: {"model": ErrorResponse},
+    },
 )
 async def predict_single(request: PredictRequest):
     """
@@ -157,6 +160,7 @@ async def predict_single(request: PredictRequest):
             del features_dict["date"]
 
         import numpy as np
+
         X = pd.DataFrame([features_dict])
         pred_log = registry.predict(X)[0]
         pred_amount = int(np.expm1(pred_log))
@@ -191,7 +195,9 @@ async def upload_file(file: UploadFile = File(...)):
         elif file.filename.endswith((".xlsx", ".xls")):
             df = pd.read_excel(io.BytesIO(contents))
         else:
-            raise HTTPException(status_code=400, detail="Unsupported file format. Use CSV or Excel.")
+            raise HTTPException(
+                status_code=400, detail="Unsupported file format. Use CSV or Excel."
+            )
 
         if df.empty:
             raise HTTPException(status_code=400, detail="Empty file")
@@ -242,18 +248,24 @@ async def get_sectors():
 
         if train_data is not None:
             all_sectors = sorted(train_data["sector"].unique().tolist())
-            sector_stats = train_data.groupby("sector")["amount_new_house_transactions"].mean().to_dict()
+            sector_stats = (
+                train_data.groupby("sector")["amount_new_house_transactions"]
+                .mean()
+                .to_dict()
+            )
         else:
             all_sectors = []
             sector_stats = {}
 
         sectors_list = []
         for sector in all_sectors:
-            sectors_list.append(SectorInfo(
-                sector_name=str(sector),
-                is_zero_sector=sector in zero_sectors,
-                historical_avg=float(sector_stats.get(sector, 0)),
-            ))
+            sectors_list.append(
+                SectorInfo(
+                    sector_name=str(sector),
+                    is_zero_sector=sector in zero_sectors,
+                    historical_avg=float(sector_stats.get(sector, 0)),
+                )
+            )
 
         return SectorsResponse(
             total_sectors=len(all_sectors),
@@ -275,8 +287,6 @@ async def get_sectors():
 async def get_metrics(run_id: Optional[str] = Query(None, description="MLflow run ID")):
     """Get model metrics from MLflow."""
     try:
-        import mlflow
-
         mlflow.set_tracking_uri("sqlite:///mlruns.db")
 
         if run_id:
@@ -284,7 +294,9 @@ async def get_metrics(run_id: Optional[str] = Query(None, description="MLflow ru
             metrics_dict = run.data.metrics
         else:
             client = mlflow.tracking.MlflowClient()
-            runs = client.search_runs(experiment_ids=["0"], order_by=["start_time DESC"], max_results=1)
+            runs = client.search_runs(
+                experiment_ids=["0"], order_by=["start_time DESC"], max_results=1
+            )
             if not runs:
                 return MetricsResponse(status="no_data", metrics=[])
 
@@ -311,11 +323,11 @@ async def get_metrics(run_id: Optional[str] = Query(None, description="MLflow ru
     response_model=DriftReport,
     tags=["Monitoring"],
 )
-async def get_drift_report(reference_period: Optional[str] = Query(None, description="Reference period")):
+async def get_drift_report(
+    reference_period: Optional[str] = Query(None, description="Reference period")
+):
     """Get drift detection report."""
     try:
-        from src.monitoring.detect_drift import detect_data_drift
-        from src.pipeline.predict import TARGET_LOG
 
         train_data = get_train_data()
         if train_data is None:
@@ -336,7 +348,11 @@ async def get_drift_report(reference_period: Optional[str] = Query(None, descrip
             feature_cols=registry.features,
         )
         summary = result["summary"]
-        affected = [col for col, s in summary["feature_drift"].items() if s.get("ks_drift") or s.get("psi_drift")]
+        affected = [
+            col
+            for col, s in summary["feature_drift"].items()
+            if s.get("ks_drift") or s.get("psi_drift")
+        ]
 
         return DriftReport(
             drift_detected=result.get("overall_drift_detected", False),

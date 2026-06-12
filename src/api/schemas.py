@@ -1,12 +1,14 @@
 """Pydantic schemas for API request/response validation."""
 
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: str = Field(..., description="Service status")
     timestamp: datetime = Field(default_factory=datetime.now)
     version: str = Field(default="1.0.0")
@@ -14,12 +16,18 @@ class HealthResponse(BaseModel):
 
 class ForecastRequest(BaseModel):
     """Request for forecast prediction."""
-    n_months: int = Field(default=12, ge=1, le=36, description="Number of months to forecast")
-    sectors: Optional[List[str]] = Field(None, description="Optional list of sectors to filter")
+
+    n_months: int = Field(
+        default=12, ge=1, le=36, description="Number of months to forecast"
+    )
+    sectors: Optional[List[str]] = Field(
+        None, description="Optional list of sectors to filter"
+    )
 
 
 class ForecastData(BaseModel):
     """Single forecast data point."""
+
     date: datetime
     sector: str
     pred_amount: int
@@ -27,6 +35,7 @@ class ForecastData(BaseModel):
 
 class ForecastResponse(BaseModel):
     """Forecast response with predictions."""
+
     status: str
     n_months: int
     total_predictions: int
@@ -36,7 +45,10 @@ class ForecastResponse(BaseModel):
 
 class PredictRequest(BaseModel):
     """Custom prediction request with input data."""
-    features: Dict[str, Any] = Field(..., description="Feature dictionary for prediction")
+
+    features: Dict[str, Any] = Field(
+        ..., description="Feature dictionary for prediction"
+    )
 
     class Config:
         json_schema_extra = {
@@ -55,6 +67,7 @@ class PredictRequest(BaseModel):
 
 class PredictResponse(BaseModel):
     """Single prediction response."""
+
     predicted_value: float
     predicted_amount: int
     confidence: Optional[float] = None
@@ -62,6 +75,7 @@ class PredictResponse(BaseModel):
 
 class UploadResponse(BaseModel):
     """File upload response."""
+
     status: str
     filename: str
     rows_processed: int
@@ -71,6 +85,7 @@ class UploadResponse(BaseModel):
 
 class SectorInfo(BaseModel):
     """Sector information."""
+
     sector_name: str | int
     is_zero_sector: bool
     historical_avg: Optional[float] = None
@@ -78,6 +93,7 @@ class SectorInfo(BaseModel):
 
 class SectorsResponse(BaseModel):
     """List of all sectors."""
+
     total_sectors: int
     zero_sectors_count: int
     active_sectors_count: int
@@ -86,6 +102,7 @@ class SectorsResponse(BaseModel):
 
 class MetricData(BaseModel):
     """Model metric data point."""
+
     name: str
     value: float
     step: Optional[int] = None
@@ -94,6 +111,7 @@ class MetricData(BaseModel):
 
 class MetricsResponse(BaseModel):
     """Model metrics from MLflow."""
+
     status: str
     metrics: List[MetricData]
     model_version: Optional[str] = None
@@ -101,6 +119,7 @@ class MetricsResponse(BaseModel):
 
 class DriftReport(BaseModel):
     """Drift detection report."""
+
     drift_detected: bool
     drift_score: float
     affected_features: List[str]
@@ -111,6 +130,7 @@ class DriftReport(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response."""
+
     status: str = "error"
     message: str
     detail: Optional[str] = None
