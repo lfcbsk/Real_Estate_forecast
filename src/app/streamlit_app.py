@@ -84,9 +84,9 @@ st.markdown(
     """
 ### Workflow
 
-1. **📤 Upload & Predict** — upload 3 raw CSV files → merged into `data/train/` → predict  
-2. **📈 Sector Forecast** — recursive multi-month forecast from merged data  
-3. **📊 Monitoring** — drift, metrics, data health  
+1. **📤 Upload & Predict** — upload 3 raw CSV files → merged into `data/train/` → predict
+2. **📈 Sector Forecast** — recursive multi-month forecast from merged data
+3. **📊 Monitoring** — drift, metrics, data health
 
 Use the **sidebar** to navigate between pages.
 """
@@ -107,7 +107,6 @@ uv run streamlit run src/app/streamlit_app.py""",
 st.markdown(
     """
 ### Data storage
-
 Uploaded raw files are **appended** to CSVs under `data/train/`.
 Rows with the same `(month, sector)` are **overwritten** by the latest upload.
 There is no separate database — CSV files are the source of truth.
