@@ -184,9 +184,20 @@ results = run_pipeline(tune=True, n_trials=10)
 print(results["test_results"])
 ```
 
-### 4. Save reference baseline (for drift monitoring)
+### 4. Drift reference baseline (automatic)
 
-After the first successful train, save the reference dataset used for drift checks:
+Training **automatically** saves the drift reference after Step 6:
+
+- `artifacts/reference.parquet` — baseline dataset for drift detection
+- `artifacts/reference_stats.json` — column statistics
+
+No manual step needed if you run:
+
+```bash
+uv run python -m src.pipeline.training
+```
+
+To refresh the baseline manually (e.g. after uploading new data without retraining):
 
 ```python
 from src.pipeline.ingest_preprocess import run as ingest_run
@@ -196,8 +207,6 @@ df_train, _ = ingest_run(test_ratio=0.2, save_outputs=False)
 save_reference_dataset(df_train)
 save_reference_statistics(df_train)
 ```
-
-This writes `artifacts/reference.parquet` and `artifacts/reference_stats.json`.
 
 ### 5. Run drift → retrain → registry orchestration
 
@@ -364,11 +373,10 @@ orchestration:
 
 1. Install uv → `uv python install 3.10` → `uv venv --python 3.10` → `uv pip install -e ".[dev]"`
 2. Download CSVs → `data/train/`
-3. `uv run python -m src.pipeline.training`
-4. Save reference baseline (step 4 above)
-5. `uv run uvicorn src.api.main:app --reload`
-6. `uv run streamlit run src/app/streamlit_app.py`
-7. `uv run pytest tests/ -v` to verify everything works
+3. `uv run python -m src.pipeline.training` (also saves drift reference)
+4. `uv run uvicorn src.api.main:app --reload`
+5. `uv run streamlit run src/app/streamlit_app.py`
+6. `uv run pytest tests/ -v` to verify everything works
 
 ---
 

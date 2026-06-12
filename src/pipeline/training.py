@@ -9,6 +9,7 @@ from catboost import CatBoostRegressor
 from sklearn.model_selection import TimeSeriesSplit
 
 from src.models.retrain import retrain_model, save_artifacts, save_onnx_model
+from src.monitoring.reference import save_reference_dataset, save_reference_statistics
 from src.pipeline.evaluation import (
     competition_score,
     evaluate_holdout,
@@ -388,6 +389,13 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
         save_artifacts(production_artifacts)
         with open("artifacts/zero_sectors.pkl", "wb") as f:
             pickle.dump(zero_sectors, f)
+
+        print("\n" + "=" * 60)
+        print("STEP 7: Save Drift Reference Baseline")
+        print("=" * 60)
+        save_reference_dataset(df_train)
+        save_reference_statistics(df_train)
+        print("✓ Reference saved: artifacts/reference.parquet, artifacts/reference_stats.json")
 
     print("✓ ONNX model saved: artifacts/model.onnx")
     return {
