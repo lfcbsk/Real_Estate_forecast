@@ -68,3 +68,13 @@ markers = [
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
