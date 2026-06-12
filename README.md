@@ -30,9 +30,15 @@ RealEssate_forecast/
 │       ├── new_house_transactions_nearby_sectors.csv
 │       └── pre_owned_house_transactions.csv
 ├── docker/
-│   ├── api.Dockerfile             # FastAPI image
-│   ├── app.Dockerfile             # Streamlit image
-│   └── docker-compose.yml         # API + dashboard services
+│   ├── api.Dockerfile
+│   ├── app.Dockerfile
+│   ├── docker-compose.yml         # API + Streamlit + Prometheus + Grafana
+│   ├── prometheus/
+│   │   └── prometheus.yml
+│   └── grafana/
+│       ├── provisioning/          # Auto-config datasource & dashboards
+│       └── dashboards/
+│           └── mlops-overview.json
 ├── notebooks/
 │   ├── eda.ipynb
 │   ├── main_nb.ipynb
@@ -303,19 +309,45 @@ load_and_merge → create_training_features → ModelRegistry.predict
 Download predictions CSV
 ```
 
-### 8. Run with Docker (optional)
+### 8. Run with Docker + Monitoring (Prometheus & Grafana)
 
 ```bash
 cd docker
 docker compose up --build
 ```
 
-| Service | URL |
-|---------|-----|
-| API | http://localhost:8000 |
-| Dashboard | http://localhost:8501 |
+| Service | URL | Purpose |
+|---------|-----|---------|
+| API | http://localhost:8000 | FastAPI + `/metrics` |
+| Dashboard | http://localhost:8501 | Streamlit |
+| **Grafana** | http://localhost:3000 | Dashboards (`admin` / `admin`) |
+| **Prometheus** | http://localhost:9090 | Metrics store |
+| cAdvisor | http://localhost:8080 | Container metrics UI |
+| Node exporter | http://localhost:9100/metrics | Host CPU/RAM |
 
-> **Note:** Training writes to `artifacts/`. Mount or copy `artifacts/` into containers before serving. Docker Compose currently mounts `models/` — symlink or copy `artifacts/` → `models/` if needed.
+**Grafana dashboard** (`RealEstate MLOps Overview`):
+
+- CPU / RAM (host + containers)
+- GPU utilization (optional, see below)
+- API request rate, latency **p95 / p99**
+- Error rate **4xx / 5xx**
+- System health: model loaded, train CSVs, MLflow DB, scrape targets
+
+**GPU monitoring** (Linux + NVIDIA Container Toolkit):
+
+```bash
+cd docker
+docker compose --profile gpu up --build
+```
+
+**Local API metrics** (without Docker):
+
+```bash
+uv run uvicorn src.api.main:app --reload
+curl http://localhost:8000/metrics
+```
+
+> Mount `artifacts/` and `data/train/` into containers before serving. Compose maps `../artifacts` and `../data`.
 
 ---
 

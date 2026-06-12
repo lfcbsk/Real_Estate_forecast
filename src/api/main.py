@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routes import router
+from src.monitoring.prometheus_metrics import start_gauge_refresh_task, update_system_gauges
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,17 +21,21 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
     logger.info("Starting RealEstate Forecast API...")
+    refresh_task = start_gauge_refresh_task()
 
     try:
         from src.models.model_registry import ModelRegistry
 
         _ = ModelRegistry()
+        update_system_gauges()
         logger.info("Model registry loaded successfully")
     except Exception as e:
         logger.warning(f"Could not preload model: {e}")
+        update_system_gauges()
 
     yield
 
+    refresh_task.cancel()
     logger.info("Shutting down API...")
 
 
@@ -72,6 +77,21 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+
+    Instrumentator(
+        should_group_status_codes=True,
+        should_ignore_untemplated=True,
+        should_instrument_requests_inprogress=True,
+        inprogress_name="http_requests_inprogress",
+        inprogress_labels=True,
+        excluded_handlers=["/metrics", "/api/v1/health", "/docs", "/redoc", "/openapi.json"],
+    ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+    logger.info("Prometheus metrics enabled at /metrics")
+except ImportError:
+    logger.warning("prometheus-fastapi-instrumentator not installed; /metrics disabled")
 
 
 @app.get("/", tags=["Root"])

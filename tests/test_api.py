@@ -212,8 +212,15 @@ def test_api_cors_headers(client):
     """Test CORS headers được set đúng."""
     response = client.options("/api/v1/health", headers={"Origin": "http://localhost:3000"})
 
-    # CORS headers phải có
     assert "access-control-allow-origin" in response.headers
+
+
+def test_prometheus_metrics_endpoint(client):
+    """Test /metrics exposes Prometheus exposition format."""
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    body = response.text
+    assert "realestate_model_loaded" in body or "http_requests" in body
 
 
 @patch("src.api.routes.process_raw_upload")

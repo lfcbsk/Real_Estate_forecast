@@ -38,6 +38,8 @@ dependencies = [
     "plotly>=5.17.0",
 
     "gunicorn>=21.2.0",
+    "prometheus-client>=0.20.0",
+    "prometheus-fastapi-instrumentator>=7.0.0",
 ]
 
 [project.optional-dependencies]
