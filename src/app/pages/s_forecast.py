@@ -19,10 +19,7 @@ paths = get_raw_csv_paths()
 missing = [p.name for p in paths.values() if not p.exists()]
 
 if missing:
-    st.warning(
-        f"Missing CSV files: {', '.join(missing)}. "
-        "Upload data on the **📤 Upload & Predict** page first."
-    )
+    st.warning(f"Missing CSV files: {', '.join(missing)}. " "Upload data on the **📤 Upload & Predict** page first.")
 
 col1, col2 = st.columns([1, 2])
 with col1:
@@ -53,13 +50,7 @@ if st.button("📊 Generate Forecast", type="primary", use_container_width=True)
 
             chart_df = forecast_df
             if forecast_df["sector"].nunique() > 15:
-                top = (
-                    forecast_df.groupby("sector")["pred_amount"]
-                    .sum()
-                    .sort_values(ascending=False)
-                    .head(15)
-                    .index
-                )
+                top = forecast_df.groupby("sector")["pred_amount"].sum().sort_values(ascending=False).head(15).index
                 chart_df = forecast_df[forecast_df["sector"].isin(top)]
                 st.caption("Showing top 15 sectors by total predicted volume.")
 

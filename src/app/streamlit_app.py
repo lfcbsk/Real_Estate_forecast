@@ -64,8 +64,7 @@ def _show_mlflow_sidebar():
 with st.sidebar:
     st.markdown("## 🏠 House Forecast")
     st.markdown(
-        "<div style='font-size:12px;color:#475569;margin-bottom:20px'>"
-        "Real-estate transaction forecasting</div>",
+        "<div style='font-size:12px;color:#475569;margin-bottom:20px'>" "Real-estate transaction forecasting</div>",
         unsafe_allow_html=True,
     )
 
@@ -80,8 +79,7 @@ with st.sidebar:
 
 st.title("🏠 House Transaction Forecast")
 
-st.markdown(
-    """
+st.markdown("""
 ### Workflow
 
 1. **📤 Upload & Predict** — upload 3 raw CSV files → merged into `data/train/` → predict
@@ -89,8 +87,7 @@ st.markdown(
 3. **📊 Monitoring** — drift, metrics, data health
 
 Use the **sidebar** to navigate between pages.
-"""
-)
+""")
 
 st.markdown("<div class='section-header'>Quick Start</div>", unsafe_allow_html=True)
 
@@ -104,11 +101,9 @@ uv run streamlit run src/app/streamlit_app.py""",
     language="bash",
 )
 
-st.markdown(
-    """
+st.markdown("""
 ### Data storage
 Uploaded raw files are **appended** to CSVs under `data/train/`.
 Rows with the same `(month, sector)` are **overwritten** by the latest upload.
 There is no separate database — CSV files are the source of truth.
-"""
-)
+""")
