@@ -159,7 +159,6 @@ jobs:
             docker compose pull
             docker compose up -d
             docker system prune -f
-        if: ${{ secrets.DEPLOY_HOST != '' }}
         continue-on-error: true
 
       - name: Create GitHub Release
