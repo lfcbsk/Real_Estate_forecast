@@ -3,9 +3,11 @@
 import io
 import logging
 from typing import Optional
-import pandas as pd
+
 import mlflow
+import pandas as pd
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+
 from src.api.schemas import (
     DriftReport,
     ErrorResponse,
@@ -195,9 +197,7 @@ async def upload_file(file: UploadFile = File(...)):
         elif file.filename.endswith((".xlsx", ".xls")):
             df = pd.read_excel(io.BytesIO(contents))
         else:
-            raise HTTPException(
-                status_code=400, detail="Unsupported file format. Use CSV or Excel."
-            )
+            raise HTTPException(status_code=400, detail="Unsupported file format. Use CSV or Excel.")
 
         if df.empty:
             raise HTTPException(status_code=400, detail="Empty file")
@@ -248,11 +248,7 @@ async def get_sectors():
 
         if train_data is not None:
             all_sectors = sorted(train_data["sector"].unique().tolist())
-            sector_stats = (
-                train_data.groupby("sector")["amount_new_house_transactions"]
-                .mean()
-                .to_dict()
-            )
+            sector_stats = train_data.groupby("sector")["amount_new_house_transactions"].mean().to_dict()
         else:
             all_sectors = []
             sector_stats = {}
@@ -294,9 +290,7 @@ async def get_metrics(run_id: Optional[str] = Query(None, description="MLflow ru
             metrics_dict = run.data.metrics
         else:
             client = mlflow.tracking.MlflowClient()
-            runs = client.search_runs(
-                experiment_ids=["0"], order_by=["start_time DESC"], max_results=1
-            )
+            runs = client.search_runs(experiment_ids=["0"], order_by=["start_time DESC"], max_results=1)
             if not runs:
                 return MetricsResponse(status="no_data", metrics=[])
 
@@ -323,9 +317,7 @@ async def get_metrics(run_id: Optional[str] = Query(None, description="MLflow ru
     response_model=DriftReport,
     tags=["Monitoring"],
 )
-async def get_drift_report(
-    reference_period: Optional[str] = Query(None, description="Reference period")
-):
+async def get_drift_report(reference_period: Optional[str] = Query(None, description="Reference period")):
     """Get drift detection report."""
     try:
 
@@ -348,11 +340,7 @@ async def get_drift_report(
             feature_cols=registry.features,
         )
         summary = result["summary"]
-        affected = [
-            col
-            for col, s in summary["feature_drift"].items()
-            if s.get("ks_drift") or s.get("psi_drift")
-        ]
+        affected = [col for col, s in summary["feature_drift"].items() if s.get("ks_drift") or s.get("psi_drift")]
 
         return DriftReport(
             drift_detected=result.get("overall_drift_detected", False),

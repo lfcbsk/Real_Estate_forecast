@@ -35,9 +35,7 @@ def mock_train_data():
             "date": pd.date_range("2020-01-01", periods=100, freq="MS"),
             "sector": [1, 2, 3, 4] * 25,
             "amount_new_house_transactions": np.random.randint(100, 1000, 100),
-            "log_amount_new_house_transactions": np.log1p(
-                np.random.randint(100, 1000, 100)
-            ),
+            "log_amount_new_house_transactions": np.log1p(np.random.randint(100, 1000, 100)),
         }
     )
 
@@ -68,9 +66,7 @@ def test_root_endpoint(client):
 
 @patch("src.api.routes.get_model_registry")
 @patch("src.api.routes.get_train_data")
-def test_forecast_success(
-    mock_get_train_data, mock_get_registry, client, mock_model_registry, mock_train_data
-):
+def test_forecast_success(mock_get_train_data, mock_get_registry, client, mock_model_registry, mock_train_data):
     """Test forecast endpoint thành công."""
     mock_get_registry.return_value = mock_model_registry
     mock_get_train_data.return_value = mock_train_data
@@ -110,9 +106,7 @@ def test_forecast_success(
 
 @patch("src.api.routes.get_model_registry")
 @patch("src.api.routes.get_train_data")
-def test_forecast_no_data(
-    mock_get_train_data, mock_get_registry, client, mock_model_registry
-):
+def test_forecast_no_data(mock_get_train_data, mock_get_registry, client, mock_model_registry):
     """Test forecast endpoint khi không có data."""
     mock_get_registry.return_value = mock_model_registry
     mock_get_train_data.return_value = None
@@ -146,9 +140,7 @@ def test_predict_single_success(mock_get_registry, client, mock_model_registry):
 
 
 @patch("src.api.routes.get_model_registry")
-def test_predict_single_invalid_features(
-    mock_get_registry, client, mock_model_registry
-):
+def test_predict_single_invalid_features(mock_get_registry, client, mock_model_registry):
     """Test predict single với features không hợp lệ."""
     mock_get_registry.return_value = mock_model_registry
     mock_model_registry.predict.side_effect = Exception("Invalid features")
@@ -173,9 +165,7 @@ def test_forecast_invalid_n_months(client):
 
 @patch("src.api.routes.get_model_registry")
 @patch("src.api.routes.get_train_data")
-def test_get_sectors(
-    mock_get_train_data, mock_get_registry, client, mock_model_registry, mock_train_data
-):
+def test_get_sectors(mock_get_train_data, mock_get_registry, client, mock_model_registry, mock_train_data):
     """Test get sectors endpoint."""
     mock_get_registry.return_value = mock_model_registry
     mock_get_train_data.return_value = mock_train_data
@@ -193,9 +183,7 @@ def test_get_sectors(
 
 @patch("src.api.routes.get_model_registry")
 @patch("src.api.routes.get_train_data")
-def test_get_drift_report(
-    mock_get_train_data, mock_get_registry, client, mock_model_registry, mock_train_data
-):
+def test_get_drift_report(mock_get_train_data, mock_get_registry, client, mock_model_registry, mock_train_data):
     """Test get drift report endpoint."""
     mock_get_registry.return_value = mock_model_registry
     mock_get_train_data.return_value = mock_train_data
@@ -222,9 +210,7 @@ def test_get_drift_report(
 
 def test_api_cors_headers(client):
     """Test CORS headers được set đúng."""
-    response = client.options(
-        "/api/v1/health", headers={"Origin": "http://localhost:3000"}
-    )
+    response = client.options("/api/v1/health", headers={"Origin": "http://localhost:3000"})
 
     # CORS headers phải có
     assert "access-control-allow-origin" in response.headers

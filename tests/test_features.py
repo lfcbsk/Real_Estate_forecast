@@ -22,9 +22,7 @@ def sample_train_df():
 
     data = []
     for sector in range(1, n_sectors + 1):
-        for i, date in enumerate(
-            pd.date_range("2020-01-01", periods=n_months, freq="MS")
-        ):
+        for i, date in enumerate(pd.date_range("2020-01-01", periods=n_months, freq="MS")):
             num_transactions = np.random.randint(10, 100)
             area_transactions = num_transactions * np.random.uniform(80, 150)
             price_transactions = np.random.uniform(1e6, 1e8)
@@ -49,14 +47,10 @@ def sample_train_df():
                     "price_new_house_transactions": price_transactions,
                     "amount_new_house_transactions": amount_transactions,
                     "area_per_unit_new_house_transactions": (
-                        area_transactions / num_transactions
-                        if num_transactions > 0
-                        else 0
+                        area_transactions / num_transactions if num_transactions > 0 else 0
                     ),
                     "total_price_per_unit_new_house_transactions": (
-                        price_transactions / num_transactions
-                        if num_transactions > 0
-                        else 0
+                        price_transactions / num_transactions if num_transactions > 0 else 0
                     ),
                     "num_new_house_available_for_sale": num_available,
                     "area_new_house_available_for_sale": area_available,
@@ -71,15 +65,9 @@ def sample_train_df():
                     "total_price_per_unit_new_house_transactions_nearby_sectors": (
                         price_nearby / num_nearby if num_nearby > 0 else 0
                     ),
-                    "num_new_house_available_for_sale_nearby_sectors": np.random.randint(
-                        100, 1000
-                    ),
-                    "area_new_house_available_for_sale_nearby_sectors": np.random.uniform(
-                        10000, 100000
-                    ),
-                    "period_new_house_sell_through_nearby_sectors": np.random.uniform(
-                        2, 6
-                    ),
+                    "num_new_house_available_for_sale_nearby_sectors": np.random.randint(100, 1000),
+                    "area_new_house_available_for_sale_nearby_sectors": np.random.uniform(10000, 100000),
+                    "period_new_house_sell_through_nearby_sectors": np.random.uniform(2, 6),
                     "area_pre_owned_house_transactions": area_pre,
                     "amount_pre_owned_house_transactions": amount_pre,
                     "num_pre_owned_house_transactions": num_pre,
@@ -118,11 +106,7 @@ def test_build_zero_sector_mask():
     df = pd.DataFrame(
         {
             "sector": [1] * 20 + [2] * 20 + [52] * 20,
-            "log_amount_new_house_transactions": [0] * 18
-            + [100, 200]
-            + [0] * 5
-            + [100] * 15
-            + [0] * 20,
+            "log_amount_new_house_transactions": [0] * 18 + [100, 200] + [0] * 5 + [100] * 15 + [0] * 20,
         }
     )
 
@@ -166,9 +150,7 @@ def test_compute_sector_stats(sample_train_df):
 @pytest.mark.unit
 def test_create_training_features_basic(sample_train_df):
     """Test tạo training features cơ bản."""
-    sector_stats = compute_sector_stats(
-        sample_train_df, "log_amount_new_house_transactions"
-    )
+    sector_stats = compute_sector_stats(sample_train_df, "log_amount_new_house_transactions")
     sector_profile = build_sector_profile(sample_train_df)
 
     df_featured = create_training_features(
@@ -237,9 +219,7 @@ def test_create_training_features_basic(sample_train_df):
 @pytest.mark.unit
 def test_create_training_features_no_nan_when_keep_nan_false(sample_train_df):
     """Test không có NaN khi keep_nan=False."""
-    sector_stats = compute_sector_stats(
-        sample_train_df, "log_amount_new_house_transactions"
-    )
+    sector_stats = compute_sector_stats(sample_train_df, "log_amount_new_house_transactions")
     sector_profile = build_sector_profile(sample_train_df)
 
     df_featured = create_training_features(
@@ -251,9 +231,7 @@ def test_create_training_features_no_nan_when_keep_nan_false(sample_train_df):
     )
 
     # Các feature columns không được có NaN
-    feature_cols = [
-        c for c in df_featured.columns if c != "log_amount_new_house_transactions"
-    ]
+    feature_cols = [c for c in df_featured.columns if c != "log_amount_new_house_transactions"]
     nan_count = df_featured[feature_cols].isna().sum().sum()
 
     assert nan_count == 0, f"Found {nan_count} NaN values in features"

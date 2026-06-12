@@ -63,9 +63,7 @@ def build_catboost(params=None):
     return CatBoostRegressor(**default)
 
 
-def timeseries_cv(
-    df_all, model, n_splits=N_SPLITS, zero_sectors=None, verbose=True, mlflow_run=None
-):
+def timeseries_cv(df_all, model, n_splits=N_SPLITS, zero_sectors=None, verbose=True, mlflow_run=None):
     """
     Proper TimeSeriesSplit CV:
       - Feature engineering computed INSIDE each fold
@@ -193,9 +191,7 @@ def timeseries_cv(
             "mape": display_df["mape"].std(),
         }
 
-        summary_df = pd.concat(
-            [display_df, pd.DataFrame([mean_row, std_row])], ignore_index=True
-        )
+        summary_df = pd.concat([display_df, pd.DataFrame([mean_row, std_row])], ignore_index=True)
 
         print("\nFold Metrics")
         print("=" * 80)
@@ -208,9 +204,7 @@ def timeseries_cv(
 
 def catboost_objective(trial, df_all, zero_sectors, n_splits=N_SPLITS):
 
-    bootstrap_type = trial.suggest_categorical(
-        "bootstrap_type", ["Bayesian", "Bernoulli"]
-    )
+    bootstrap_type = trial.suggest_categorical("bootstrap_type", ["Bayesian", "Bernoulli"])
 
     params = {
         "iterations": trial.suggest_int("iterations", 1500, 5000),
@@ -221,16 +215,12 @@ def catboost_objective(trial, df_all, zero_sectors, n_splits=N_SPLITS):
         "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 15, 80),
         "colsample_bylevel": trial.suggest_float("colsample_bylevel", 0.6, 0.9),
         "border_count": trial.suggest_categorical("border_count", [128, 254]),
-        "leaf_estimation_iterations": trial.suggest_int(
-            "leaf_estimation_iterations", 3, 10
-        ),
+        "leaf_estimation_iterations": trial.suggest_int("leaf_estimation_iterations", 3, 10),
         "bootstrap_type": bootstrap_type,
     }
 
     if bootstrap_type == "Bayesian":
-        params["bagging_temperature"] = trial.suggest_float(
-            "bagging_temperature", 0.0, 3.0
-        )
+        params["bagging_temperature"] = trial.suggest_float("bagging_temperature", 0.0, 3.0)
     else:  # Bernoulli
         params["subsample"] = trial.suggest_float("subsample", 0.5, 1.0)
 
@@ -267,9 +257,7 @@ def tune_model(model_name, df_all, zero_sectors, n_trials=N_TRIALS, n_splits=N_S
     assert model_name in ("catboost", "lgbm"), "model_name must be 'catboost' or 'lgbm'"
 
     print(f"\n{'='*60}")
-    print(
-        f"Optuna tuning: {model_name.upper()} | {n_trials} trials | {n_splits}-fold CV"
-    )
+    print(f"Optuna tuning: {model_name.upper()} | {n_trials} trials | {n_splits}-fold CV")
     print(f"{'='*60}")
 
     if model_name == "catboost":
@@ -333,9 +321,7 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
             print("\n" + "=" * 60)
             print("STEP 2: Optuna Tuning")
             print("=" * 60)
-            cat_best_params, study = tune_model(
-                "catboost", df_train, zero_sectors, n_trials
-            )
+            cat_best_params, study = tune_model("catboost", df_train, zero_sectors, n_trials)
             mlflow.log_params({f"best_{k}": v for k, v in cat_best_params.items()})
             mlflow.log_metric("optuna_best_score", study.best_value)
         else:
@@ -349,9 +335,7 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
         cat_model = build_catboost(cat_best_params)
 
         print("CatBoost:")
-        cat_scores, cat_oof = timeseries_cv(
-            df_train, cat_model, zero_sectors=zero_sectors, mlflow_run=parent_run
-        )
+        cat_scores, cat_oof = timeseries_cv(df_train, cat_model, zero_sectors=zero_sectors, mlflow_run=parent_run)
         # ── Summary ────────────────────────────────────────────────
         cat_mean = np.mean(cat_scores)
         cat_std = np.std(cat_scores)
@@ -367,9 +351,7 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
         print("STEP 4: Retrain Final Model")
         print("=" * 60)
 
-        test_artifacts = retrain_model(
-            df_train, cat_best_params, model_name="TEST MODEL"
-        )
+        test_artifacts = retrain_model(df_train, cat_best_params, model_name="TEST MODEL")
 
         final_model = test_artifacts["model"]
 
@@ -396,20 +378,12 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
         print("STEP 6: Train Production Model")
         print("=" * 60)
 
-        full_df = (
-            pd.concat([df_train, test_df])
-            .sort_values(["sector", "date"])
-            .reset_index(drop=True)
-        )
+        full_df = pd.concat([df_train, test_df]).sort_values(["sector", "date"]).reset_index(drop=True)
 
-        production_artifacts = retrain_model(
-            full_df, cat_best_params, model_name="PRODUCTION MODEL"
-        )
+        production_artifacts = retrain_model(full_df, cat_best_params, model_name="PRODUCTION MODEL")
 
         production_model = production_artifacts["model"]
-        mlflow.catboost.log_model(
-            production_model, artifact_path="catboost_production_model"
-        )
+        mlflow.catboost.log_model(production_model, artifact_path="catboost_production_model")
         save_onnx_model(production_model)
         save_artifacts(production_artifacts)
         with open("artifacts/zero_sectors.pkl", "wb") as f:

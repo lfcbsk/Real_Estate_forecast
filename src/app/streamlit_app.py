@@ -168,9 +168,7 @@ with st.sidebar:
             st.rerun()
 
     # MLflow baseline metrics (nếu có)
-    st.markdown(
-        "<div class='section-header'>Baseline Metrics</div>", unsafe_allow_html=True
-    )
+    st.markdown("<div class='section-header'>Baseline Metrics</div>", unsafe_allow_html=True)
     _show_mlflow_sidebar()
 
 # ── Route pages ───────────────────────────────────────────────────────────────

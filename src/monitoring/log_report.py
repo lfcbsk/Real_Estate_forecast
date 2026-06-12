@@ -5,9 +5,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 # Cấu hình logging cơ bản (có thể điều chỉnh level thành INFO hoặc DEBUG)
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -84,11 +82,7 @@ def evaluate_retrain_decision(comprehensive_report: Dict[str, Any]) -> Dict[str,
 
     # Lấy chi tiết MAE degradation nếu có
     concept_details = details.get("concept_drift", {})
-    mae_degradation = (
-        concept_details.get("mae_degradation_pct", 0.0)
-        if isinstance(concept_details, dict)
-        else 0.0
-    )
+    mae_degradation = concept_details.get("mae_degradation_pct", 0.0) if isinstance(concept_details, dict) else 0.0
 
     decision = "HOLD"  # Mặc định là giữ nguyên model
     reasons = []
@@ -107,31 +101,23 @@ def evaluate_retrain_decision(comprehensive_report: Dict[str, Any]) -> Dict[str,
     elif concept_drift_detected or mae_degradation > 0.2:
         decision = "RETRAIN"
         priority = "HIGH"
-        reasons.append(
-            f"Concept drift detected. MAE degraded by {mae_degradation:.1%}."
-        )
+        reasons.append(f"Concept drift detected. MAE degraded by {mae_degradation:.1%}.")
 
     # --- RULE 3: Severe Feature/Label Drift ---
     elif severity == "high" or drift_ratio > 0.5:
         decision = "RETRAIN"
         priority = "HIGH"
-        reasons.append(
-            f"High severity data drift detected ({drift_ratio:.1%} features affected)."
-        )
+        reasons.append(f"High severity data drift detected ({drift_ratio:.1%} features affected).")
 
     # --- RULE 4: Moderate Drift (Cảnh báo) ---
     elif severity == "medium" or drift_ratio > 0.2:
         decision = "MONITOR"
         priority = "MEDIUM"
-        reasons.append(
-            "Moderate drift detected. Prepare retraining pipeline, but no immediate action required."
-        )
+        reasons.append("Moderate drift detected. Prepare retraining pipeline, but no immediate action required.")
 
     # --- RULE 5: Stable ---
     else:
-        reasons.append(
-            "System is stable. No significant drift or performance degradation."
-        )
+        reasons.append("System is stable. No significant drift or performance degradation.")
 
     result = {
         "decision": decision,  # BLOCKED, RETRAIN, MONITOR, HOLD

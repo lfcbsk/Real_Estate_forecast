@@ -91,18 +91,14 @@ def full_df_with_drift(reference_df, current_df_with_drift):
 
 @pytest.mark.unit
 def test_calculate_psi_no_drift(reference_df):
-    psi = calculate_psi(
-        reference_df["feature_1"].values, reference_df["feature_1"].values
-    )
+    psi = calculate_psi(reference_df["feature_1"].values, reference_df["feature_1"].values)
     assert psi < 0.05, f"PSI should be near 0 for identical data, got {psi}"
 
 
 @pytest.mark.unit
 def test_calculate_psi_high_drift(reference_df, current_df_with_drift):
     """PSI của 2 tập dữ liệu khác biệt lớn phải > 0.2."""
-    psi = calculate_psi(
-        reference_df["feature_1"].values, current_df_with_drift["feature_1"].values
-    )
+    psi = calculate_psi(reference_df["feature_1"].values, current_df_with_drift["feature_1"].values)
     assert psi > 0.2, f"PSI should be > 0.2 for drifted data, got {psi}"
 
 
@@ -116,9 +112,7 @@ def test_calculate_psi_moderate_drift(reference_df):
 
 @pytest.mark.unit
 def test_feature_drift_stats_no_drift(reference_df):
-    result = analyze_feature_drift_stats(
-        reference_df["feature_1"], reference_df["feature_1"]
-    )
+    result = analyze_feature_drift_stats(reference_df["feature_1"], reference_df["feature_1"])
     assert "ks_statistic" in result
     assert "ks_pvalue" in result
     assert "psi" in result
@@ -129,9 +123,7 @@ def test_feature_drift_stats_no_drift(reference_df):
 
 @pytest.mark.unit
 def test_feature_drift_stats_with_drift(reference_df, current_df_with_drift):
-    result = analyze_feature_drift_stats(
-        reference_df["feature_1"], current_df_with_drift["feature_1"]
-    )
+    result = analyze_feature_drift_stats(reference_df["feature_1"], current_df_with_drift["feature_1"])
     assert result["ks_drift"] is True or result["psi_drift"] is True
 
 
@@ -171,18 +163,14 @@ def test_check_data_quality_drift_schema_mismatch(reference_df):
 
 @pytest.mark.unit
 def test_detect_distribution_drift_no_drift(reference_df):
-    result = detect_distribution_drift(
-        reference_df["feature_1"], reference_df["feature_1"], "Test Feature"
-    )
+    result = detect_distribution_drift(reference_df["feature_1"], reference_df["feature_1"], "Test Feature")
     assert result["drift_detected"] is False
     assert result["severity"] == "low"
 
 
 @pytest.mark.unit
 def test_detect_distribution_drift_high_drift(reference_df, current_df_with_drift):
-    result = detect_distribution_drift(
-        reference_df["feature_1"], current_df_with_drift["feature_1"], "Test Feature"
-    )
+    result = detect_distribution_drift(reference_df["feature_1"], current_df_with_drift["feature_1"], "Test Feature")
     assert result["drift_detected"] is True
     assert result["severity"] in ["medium", "high"]
 
@@ -196,9 +184,7 @@ def test_page_hinkley_no_drift():
 
 @pytest.mark.unit
 def test_page_hinkley_sudden_drift():
-    errors = np.concatenate(
-        [np.random.normal(0, 0.1, 50), np.random.normal(5, 0.1, 50)]
-    )
+    errors = np.concatenate([np.random.normal(0, 0.1, 50), np.random.normal(5, 0.1, 50)])
     result = page_hinkley_test(errors, lambda_ph=50.0)
     assert result["drift_detected"] is True
 
@@ -214,25 +200,19 @@ def test_page_hinkley_gradual_drift():
 def test_detect_concept_drift_no_drift(reference_df, fake_model_good_fit):
     ref_X = reference_df[["feature_1", "feature_2"]]
     ref_y = reference_df["log_amount_new_house_transactions"]
-    result = detect_concept_drift_comprehensive(
-        ref_X, ref_y, ref_X, ref_y, fake_model_good_fit, mae_threshold=0.2
-    )
+    result = detect_concept_drift_comprehensive(ref_X, ref_y, ref_X, ref_y, fake_model_good_fit, mae_threshold=0.2)
     assert result["concept_drift_detected"] is False
 
 
 @pytest.mark.unit
-def test_detect_concept_drift_with_degradation(
-    reference_df, current_df_with_drift, fake_model_degrading
-):
+def test_detect_concept_drift_with_degradation(reference_df, current_df_with_drift, fake_model_degrading):
     ref_X = reference_df[["feature_1", "feature_2"]]
     ref_y = reference_df["log_amount_new_house_transactions"]
 
     curr_X = current_df_with_drift[["feature_1", "feature_2"]]
     curr_y = current_df_with_drift["log_amount_new_house_transactions"]
 
-    result = detect_concept_drift_comprehensive(
-        ref_X, ref_y, curr_X, curr_y, fake_model_degrading, mae_threshold=0.2
-    )
+    result = detect_concept_drift_comprehensive(ref_X, ref_y, curr_X, curr_y, fake_model_degrading, mae_threshold=0.2)
     assert result["concept_drift_detected"] is True
 
 

@@ -54,14 +54,10 @@ class RegistryGate:
     @classmethod
     def from_config(cls) -> "RegistryGate":
         return cls(
-            min_competition_score=float(
-                REGISTRY_CFG.get("min_competition_score", 0.55)
-            ),
+            min_competition_score=float(REGISTRY_CFG.get("min_competition_score", 0.55)),
             min_r2=float(REGISTRY_CFG.get("min_r2", 0.0)),
             max_mape=float(REGISTRY_CFG.get("max_mape", 100.0)),
-            require_improvement_over_current=bool(
-                REGISTRY_CFG.get("require_improvement_over_current", False)
-            ),
+            require_improvement_over_current=bool(REGISTRY_CFG.get("require_improvement_over_current", False)),
         )
 
 
@@ -106,11 +102,7 @@ def detect_drift_against_reference(
     drift_ratio = drifted_features_count / len(feature_cols) if feature_cols else 0.0
 
     label_report = None
-    if (
-        target_col
-        and target_col in reference_df.columns
-        and target_col in current_df.columns
-    ):
+    if target_col and target_col in reference_df.columns and target_col in current_df.columns:
         label_report = detect_distribution_drift(
             reference_df[target_col], current_df[target_col], "Target/Label", alpha
         )
@@ -138,12 +130,8 @@ def detect_drift_against_reference(
 
     if concept_flag or drift_ratio > 0.5 or quality_flag:
         severity = "high"
-        recommendation = (
-            "URGENT: Retrain model immediately. Check data pipeline for quality issues."
-        )
-    elif drift_ratio > feature_ratio_threshold or (
-        label_report and label_report["severity"] == "medium"
-    ):
+        recommendation = "URGENT: Retrain model immediately. Check data pipeline for quality issues."
+    elif drift_ratio > feature_ratio_threshold or (label_report and label_report["severity"] == "medium"):
         severity = "medium"
         recommendation = "WARNING: Monitor closely. Prepare retraining pipeline."
     else:
@@ -188,9 +176,7 @@ def evaluate_for_registry(
     mape = metrics.get("mape", float("inf"))
 
     if score < gate.min_competition_score:
-        messages.append(
-            f"Competition score {score:.4f} below minimum {gate.min_competition_score}"
-        )
+        messages.append(f"Competition score {score:.4f} below minimum {gate.min_competition_score}")
     if r2 < gate.min_r2:
         messages.append(f"R2 {r2:.4f} below minimum {gate.min_r2}")
     if mape > gate.max_mape:
@@ -199,9 +185,7 @@ def evaluate_for_registry(
     if gate.require_improvement_over_current and current_metrics:
         current_score = current_metrics.get("competition_score", 0.0)
         if score <= current_score:
-            messages.append(
-                f"New score {score:.4f} did not beat current {current_score:.4f}"
-            )
+            messages.append(f"New score {score:.4f} did not beat current {current_score:.4f}")
 
     eligible = len(messages) == 0
     if eligible:
@@ -255,9 +239,7 @@ def run_orchestration(
         combined = pd.concat([df_train, df_test]).sort_values(["sector", "date"])
     else:
         df_train, df_test = ingest_run(test_ratio=test_ratio, save_outputs=False)
-        combined = pd.concat([df_train, df_test, new_data]).drop_duplicates(
-            subset=["date", "sector"], keep="last"
-        )
+        combined = pd.concat([df_train, df_test, new_data]).drop_duplicates(subset=["date", "sector"], keep="last")
         combined = combined.sort_values(["sector", "date"]).reset_index(drop=True)
         split_idx = int(len(combined) * (1 - test_ratio))
         df_train = combined.iloc[:split_idx].copy()
@@ -279,9 +261,7 @@ def run_orchestration(
     )
     feature_cols = get_valid_features(featured_train)
 
-    current_slice = (
-        df_test if len(df_test) > 0 else combined.tail(max(1, len(combined) // 5))
-    )
+    current_slice = df_test if len(df_test) > 0 else combined.tail(max(1, len(combined) // 5))
     featured_current = create_training_features(
         pd.concat([df_train, current_slice]).sort_values(["sector", "date"]),
         target_col=TARGET_LOG,
@@ -289,9 +269,7 @@ def run_orchestration(
         sector_profile=sector_profile,
         keep_nan=False,
     )
-    featured_current = featured_current[
-        featured_current["date"].isin(current_slice["date"])
-    ]
+    featured_current = featured_current[featured_current["date"].isin(current_slice["date"])]
 
     drift_report = detect_drift_against_reference(
         reference_df=reference_df,
@@ -326,9 +304,7 @@ def run_orchestration(
         eval_metrics = pipeline_result.get("test_results", {})
         zero_sectors = pipeline_result.get("zero_sectors", set())
         messages.append("Full tuning pipeline completed")
-        eligible, gate_messages = evaluate_for_registry(
-            eval_metrics, current_metrics=current_metrics
-        )
+        eligible, gate_messages = evaluate_for_registry(eval_metrics, current_metrics=current_metrics)
         result.evaluation = eval_metrics
         result.registry_eligible = eligible
         result.messages.extend(gate_messages)
@@ -340,9 +316,7 @@ def run_orchestration(
         return result
 
     zero_sectors, _ = build_zero_sector_mask(df_train)
-    artifacts = retrain_model(
-        df_train, cat_params or {}, model_name="ORCHESTRATION RETRAIN"
-    )
+    artifacts = retrain_model(df_train, cat_params or {}, model_name="ORCHESTRATION RETRAIN")
     eval_metrics = evaluate_holdout(
         model=artifacts["model"],
         train_df=df_train,
@@ -352,9 +326,7 @@ def run_orchestration(
     messages.append("Fast retrain completed (no Optuna tuning)")
 
     result.evaluation = eval_metrics
-    eligible, gate_messages = evaluate_for_registry(
-        eval_metrics, current_metrics=current_metrics
-    )
+    eligible, gate_messages = evaluate_for_registry(eval_metrics, current_metrics=current_metrics)
     result.registry_eligible = eligible
     result.messages.extend(gate_messages)
 
@@ -376,9 +348,7 @@ if __name__ == "__main__":
     import argparse
     import json
 
-    parser = argparse.ArgumentParser(
-        description="Run drift -> retrain -> registry orchestration"
-    )
+    parser = argparse.ArgumentParser(description="Run drift -> retrain -> registry orchestration")
     parser.add_argument("--tune", choices=["true", "false"], default="false")
     parser.add_argument("--promote", choices=["true", "false"], default="true")
     parser.add_argument("--n-trials", type=int, default=10)

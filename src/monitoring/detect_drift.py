@@ -23,26 +23,17 @@ def calculate_psi(expected: np.ndarray, actual: np.ndarray, buckets: int = 10) -
     max_val = max(np.max(expected), np.max(actual))
     epsilon = 1e-5
 
-    expected_counts, bin_edges = np.histogram(
-        expected, bins=buckets, range=(min_val, max_val)
-    )
+    expected_counts, bin_edges = np.histogram(expected, bins=buckets, range=(min_val, max_val))
     actual_counts, _ = np.histogram(actual, bins=bin_edges)
 
-    expected_percents = (expected_counts + epsilon) / (
-        len(expected) + epsilon * buckets
-    )
+    expected_percents = (expected_counts + epsilon) / (len(expected) + epsilon * buckets)
     actual_percents = (actual_counts + epsilon) / (len(actual) + epsilon * buckets)
 
-    psi = np.sum(
-        (actual_percents - expected_percents)
-        * np.log(actual_percents / expected_percents)
-    )
+    psi = np.sum((actual_percents - expected_percents) * np.log(actual_percents / expected_percents))
     return float(psi)
 
 
-def analyze_feature_drift_stats(
-    ref: pd.Series, curr: pd.Series, alpha: float = 0.05
-) -> Dict[str, Any]:
+def analyze_feature_drift_stats(ref: pd.Series, curr: pd.Series, alpha: float = 0.05) -> Dict[str, Any]:
     """
     Run KS-test, Anderson-Darling và PSI for a feature.
     """
@@ -82,9 +73,7 @@ def analyze_feature_drift_stats(
 # ==============================================================================
 
 
-def check_data_quality_drift(
-    ref_df: pd.DataFrame, curr_df: pd.DataFrame
-) -> Dict[str, Any]:
+def check_data_quality_drift(ref_df: pd.DataFrame, curr_df: pd.DataFrame) -> Dict[str, Any]:
     """
     Check data quality (Missing rate, Schema).
     """
@@ -98,9 +87,7 @@ def check_data_quality_drift(
         if col not in curr_missing.index:
             continue
         if curr_missing[col] > ref_missing[col] + 0.05:
-            issues.append(
-                f"Missing rate in '{col}' increased from {ref_missing[col]:.2%} to {curr_missing[col]:.2%}"
-            )
+            issues.append(f"Missing rate in '{col}' increased from {ref_missing[col]:.2%} to {curr_missing[col]:.2%}")
 
     # 2. New columns or missing columns
     if set(ref_df.columns) != set(curr_df.columns):
@@ -143,9 +130,7 @@ def detect_distribution_drift(
 # ==============================================================================
 
 
-def page_hinkley_test(
-    errors: np.ndarray, delta: float = 0.005, lambda_ph: float = 50.0
-) -> Dict[str, Any]:
+def page_hinkley_test(errors: np.ndarray, delta: float = 0.005, lambda_ph: float = 50.0) -> Dict[str, Any]:
     """
     Page-Hinkley Test for Time series  (sequential).
     deetect gradual or sudden drift in errors from predictions.
@@ -192,17 +177,13 @@ def detect_concept_drift_comprehensive(
         # 1. MAE Degradation
         baseline_mae = float(np.mean(np.abs(ref_y - ref_pred)))
         current_mae = float(np.mean(np.abs(curr_y - curr_pred)))
-        mae_degradation = (
-            (current_mae - baseline_mae) / baseline_mae if baseline_mae > 0 else 0.0
-        )
+        mae_degradation = (current_mae - baseline_mae) / baseline_mae if baseline_mae > 0 else 0.0
 
         # 2. Page-Hinkley on current absolute errors
         curr_abs_errors = np.abs(curr_y - curr_pred)
         ph_result = page_hinkley_test(curr_abs_errors)
 
-        concept_drift_flag = bool(
-            (mae_degradation > mae_threshold) or ph_result["drift_detected"]
-        )
+        concept_drift_flag = bool((mae_degradation > mae_threshold) or ph_result["drift_detected"])
 
         return {
             "concept_drift_detected": concept_drift_flag,
@@ -233,11 +214,7 @@ def detect_data_drift(
     call all drift.
     """
     # ---- 1) Split reference / current ----
-    df_sorted = (
-        df.sort_values("date").reset_index(drop=True)
-        if "date" in df.columns
-        else df.reset_index(drop=True)
-    )
+    df_sorted = df.sort_values("date").reset_index(drop=True) if "date" in df.columns else df.reset_index(drop=True)
     split_idx = max(1, int(len(df_sorted) * split_ratio))
 
     ref_df = df_sorted.iloc[:split_idx].copy()
@@ -247,11 +224,7 @@ def detect_data_drift(
     quality_report = check_data_quality_drift(ref_df, curr_df)
 
     # ---- 3) Feature Drift ----
-    numeric_cols = (
-        feature_cols
-        if feature_cols
-        else ref_df.select_dtypes(include=np.number).columns.tolist()
-    )
+    numeric_cols = feature_cols if feature_cols else ref_df.select_dtypes(include=np.number).columns.tolist()
     feature_report = {}
     drifted_features_count = 0
 
@@ -267,9 +240,7 @@ def detect_data_drift(
     # ---- 4) Label Drift ----
     label_report = None
     if target_col and target_col in df_sorted.columns:
-        label_report = detect_distribution_drift(
-            ref_df[target_col], curr_df[target_col], "Target/Label", alpha
-        )
+        label_report = detect_distribution_drift(ref_df[target_col], curr_df[target_col], "Target/Label", alpha)
 
     # ---- 5) Prediction Drift ----
     pred_report = None
@@ -285,12 +256,7 @@ def detect_data_drift(
 
     # ---- 6) Concept Drift ----
     concept_report = None
-    if (
-        model is not None
-        and target_col is not None
-        and target_col in df_sorted.columns
-        and feature_cols is not None
-    ):
+    if model is not None and target_col is not None and target_col in df_sorted.columns and feature_cols is not None:
         concept_report = detect_concept_drift_comprehensive(
             ref_df[feature_cols],
             ref_df[target_col],
@@ -307,9 +273,7 @@ def detect_data_drift(
     # Logic quyết định severity
     if concept_flag or drift_ratio > 0.5 or quality_flag:
         severity = "high"
-        recommendation = (
-            "URGENT: Retrain model immediately. Check data pipeline for quality issues."
-        )
+        recommendation = "URGENT: Retrain model immediately. Check data pipeline for quality issues."
     elif drift_ratio > 0.2 or (label_report and label_report["severity"] == "medium"):
         severity = "medium"
         recommendation = "WARNING: Monitor closely. Prepare retraining pipeline. Investigate drifted features."

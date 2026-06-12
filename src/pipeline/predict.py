@@ -53,9 +53,7 @@ def recursive_forecast(
 
         # Combine history + this month's rows → compute features
         combined = (
-            pd.concat([history, month_rows], ignore_index=True)
-            .sort_values(["sector", "date"])
-            .reset_index(drop=True)
+            pd.concat([history, month_rows], ignore_index=True).sort_values(["sector", "date"]).reset_index(drop=True)
         )
 
         featured = create_training_features(
@@ -125,12 +123,7 @@ def build_forecast_grid(df_train, n_months=12):
     skip = {TARGET, TARGET_LOG, "date", "sector"}
     exog_cols = [c for c in df_train.columns if c not in skip]
     if exog_cols:
-        last_known = (
-            df_train.sort_values("date")
-            .groupby("sector")[exog_cols]
-            .last()
-            .reset_index()
-        )
+        last_known = df_train.sort_values("date").groupby("sector")[exog_cols].last().reset_index()
         grid = grid.merge(last_known, on="sector", how="left")
 
     grid[TARGET_LOG] = np.nan

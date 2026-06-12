@@ -17,12 +17,8 @@ class HealthResponse(BaseModel):
 class ForecastRequest(BaseModel):
     """Request for forecast prediction."""
 
-    n_months: int = Field(
-        default=12, ge=1, le=36, description="Number of months to forecast"
-    )
-    sectors: Optional[List[str]] = Field(
-        None, description="Optional list of sectors to filter"
-    )
+    n_months: int = Field(default=12, ge=1, le=36, description="Number of months to forecast")
+    sectors: Optional[List[str]] = Field(None, description="Optional list of sectors to filter")
 
 
 class ForecastData(BaseModel):
@@ -46,9 +42,7 @@ class ForecastResponse(BaseModel):
 class PredictRequest(BaseModel):
     """Custom prediction request with input data."""
 
-    features: Dict[str, Any] = Field(
-        ..., description="Feature dictionary for prediction"
-    )
+    features: Dict[str, Any] = Field(..., description="Feature dictionary for prediction")
 
     class Config:
         json_schema_extra = {

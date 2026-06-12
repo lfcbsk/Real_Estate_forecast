@@ -102,22 +102,14 @@ def assign_regime(month):
 
 def build_sector_profile(df_train_fold):
 
-    profile = (
-        df_train_fold.groupby("sector")[TARGET_LOG].agg(["mean", "std"]).reset_index()
-    )
+    profile = df_train_fold.groupby("sector")[TARGET_LOG].agg(["mean", "std"]).reset_index()
     profile["cv"] = profile["std"] / (profile["mean"] + 1)
 
-    profile["zero_rate"] = (
-        df_train_fold.groupby("sector")[TARGET_LOG]
-        .apply(lambda x: (x == 0).mean())
-        .values
-    )
+    profile["zero_rate"] = df_train_fold.groupby("sector")[TARGET_LOG].apply(lambda x: (x == 0).mean()).values
 
     profile["sector_type"] = "normal"
     profile.loc[profile["zero_rate"] >= 0.85, "sector_type"] = "dead"
-    profile.loc[
-        (profile["zero_rate"] < 0.85) & (profile["cv"] >= 1.20), "sector_type"
-    ] = "spike"
+    profile.loc[(profile["zero_rate"] < 0.85) & (profile["cv"] >= 1.20), "sector_type"] = "spike"
 
     return dict(zip(profile["sector"], profile["sector_type"]))
 
@@ -143,14 +135,8 @@ def build_zero_sector_mask(df_train, zero_thresh=0.85, recent_n=6):
             total_obs="count",
             zero_count=lambda x: (x == 0).sum(),
             mean_val="mean",
-            last_mean=lambda x: (
-                x.iloc[-recent_n:].mean() if len(x) >= recent_n else x.mean()
-            ),
-            last_zeros=lambda x: (
-                (x.iloc[-recent_n:] == 0).all()
-                if len(x) >= recent_n
-                else (x == 0).all()
-            ),
+            last_mean=lambda x: (x.iloc[-recent_n:].mean() if len(x) >= recent_n else x.mean()),
+            last_zeros=lambda x: ((x.iloc[-recent_n:] == 0).all() if len(x) >= recent_n else (x == 0).all()),
         )
         .reset_index()
     )
@@ -158,33 +144,19 @@ def build_zero_sector_mask(df_train, zero_thresh=0.85, recent_n=6):
     sector_meta["rule_A"] = sector_meta["zero_rate"] >= zero_thresh
     sector_meta["rule_B"] = sector_meta["last_zeros"]
     sector_meta["rule_hard"] = sector_meta["sector"].isin(hardcoded)
-    sector_meta["is_zero_sector"] = (
-        sector_meta["rule_A"] | sector_meta["rule_B"] | sector_meta["rule_hard"]
-    )
+    sector_meta["is_zero_sector"] = sector_meta["rule_A"] | sector_meta["rule_B"] | sector_meta["rule_hard"]
 
-    zero_sectors = set(
-        sector_meta.loc[sector_meta["is_zero_sector"], "sector"].tolist()
-    )
+    zero_sectors = set(sector_meta.loc[sector_meta["is_zero_sector"], "sector"].tolist())
 
     n = len(zero_sectors)
     print(f"[Zero-Sector Rule] {n} sectors flagged as always-zero → predict 0")
-    print(
-        f"  Rule A (zero_rate >= {zero_thresh:.0%}): "
-        f"{sector_meta['rule_A'].sum()} sectors"
-    )
-    print(
-        f"  Rule B (last {recent_n} months all zero): "
-        f"{sector_meta['rule_B'].sum()} sectors"
-    )
-    print(
-        f"  Rule Hard (sector 52, 95, 49, 74): {sector_meta['rule_hard'].sum()} sectors"
-    )
+    print(f"  Rule A (zero_rate >= {zero_thresh:.0%}): " f"{sector_meta['rule_A'].sum()} sectors")
+    print(f"  Rule B (last {recent_n} months all zero): " f"{sector_meta['rule_B'].sum()} sectors")
+    print(f"  Rule Hard (sector 52, 95, 49, 74): {sector_meta['rule_hard'].sum()} sectors")
     return zero_sectors, sector_meta
 
 
-def apply_zero_sector_rule(
-    predictions: np.ndarray, sectors: pd.Series, zero_sectors: set
-) -> np.ndarray:
+def apply_zero_sector_rule(predictions: np.ndarray, sectors: pd.Series, zero_sectors: set) -> np.ndarray:
     """Zero-out predictions for flagged sectors."""
     preds = predictions.copy()
     mask = sectors.isin(zero_sectors).values
@@ -198,9 +170,7 @@ def compute_sector_stats(df_train_fold, target_col):
     Pass the result to create_training_features() as sector_stats.
     """
     stats = df_train_fold.groupby("sector")[target_col].agg(["mean", "std"])
-    stats["zero_rate"] = df_train_fold.groupby("sector")[target_col].apply(
-        lambda x: (x == 0).mean()
-    )
+    stats["zero_rate"] = df_train_fold.groupby("sector")[target_col].apply(lambda x: (x == 0).mean())
     stats["cv"] = stats["std"] / (stats["mean"] + 1e-9)
     return {
         "mean": stats["mean"].to_dict(),
@@ -241,9 +211,7 @@ def create_training_features(
     # Trend
     df["trend"] = df.groupby("sector").cumcount()
 
-    df["trend_months"] = (
-        df["date"] - df.groupby("sector")["date"].transform("min")
-    ).dt.days / 30.0
+    df["trend_months"] = (df["date"] - df.groupby("sector")["date"].transform("min")).dt.days / 30.0
 
     # Lags
     for lag in LAG_LIST:
@@ -272,9 +240,7 @@ def create_training_features(
     df["vol_ratio_3_12"] = df["rolling_std_3"] / (df["rolling_std_12"] + 1e-9)
 
     # Expanding
-    df["expanding_mean"] = shifted_target.groupby(df["sector"]).transform(
-        lambda x: x.expanding().mean()
-    )
+    df["expanding_mean"] = shifted_target.groupby(df["sector"]).transform(lambda x: x.expanding().mean())
 
     # Trend strength
     df["trend_strength"] = df["rolling_mean_3"] / (df["rolling_mean_12"] + 1)
@@ -291,12 +257,8 @@ def create_training_features(
     df["yoy_ratio"] = df["lag_1"] / (lag13 + 1)
 
     # Rolling max/min
-    df["rolling_max_12"] = shifted_target.groupby(df["sector"]).transform(
-        lambda x: x.rolling(12, min_periods=1).max()
-    )
-    df["rolling_min_12"] = shifted_target.groupby(df["sector"]).transform(
-        lambda x: x.rolling(12, min_periods=1).min()
-    )
+    df["rolling_max_12"] = shifted_target.groupby(df["sector"]).transform(lambda x: x.rolling(12, min_periods=1).max())
+    df["rolling_min_12"] = shifted_target.groupby(df["sector"]).transform(lambda x: x.rolling(12, min_periods=1).min())
 
     df["spike_ratio"] = df["rolling_max_12"] / (df["rolling_mean_12"] + 1)
     df["volatility_ratio"] = df["rolling_std_12"] / (df["rolling_mean_12"] + 1)
@@ -313,9 +275,7 @@ def create_training_features(
 
     df["sector_type"] = df["sector_type"].map(type_map)
 
-    df["downtrend_signal"] = (
-        df["rolling_mean_3"] < df["rolling_mean_12"] * 0.5
-    ).astype(int)
+    df["downtrend_signal"] = (df["rolling_mean_3"] < df["rolling_mean_12"] * 0.5).astype(int)
 
     # Train-fold sector stats
     if sector_stats is not None:
@@ -326,21 +286,15 @@ def create_training_features(
 
     # exogenous features (optional columns for minimal / partial datasets)
     if "num_new_house_available_for_sale_nearby_sectors" in df.columns:
-        df["nearby_supply_lag1"] = df.groupby("sector")[
-            "num_new_house_available_for_sale_nearby_sectors"
-        ].shift(1)
+        df["nearby_supply_lag1"] = df.groupby("sector")["num_new_house_available_for_sale_nearby_sectors"].shift(1)
     if "period_new_house_sell_through_nearby_sectors" in df.columns:
-        df["nearby_sellthrough_lag1"] = df.groupby("sector")[
-            "period_new_house_sell_through_nearby_sectors"
-        ].shift(1)
+        df["nearby_sellthrough_lag1"] = df.groupby("sector")["period_new_house_sell_through_nearby_sectors"].shift(1)
 
     g = df.groupby("sector")
     if "period_new_house_sell_through" in df.columns:
         df["sellthrough_lag1"] = g["period_new_house_sell_through"].shift(1)
     if "price_new_house_transactions_nearby_sectors" in df.columns:
-        df["nearby_price_lag1"] = g[
-            "price_new_house_transactions_nearby_sectors"
-        ].shift(1)
+        df["nearby_price_lag1"] = g["price_new_house_transactions_nearby_sectors"].shift(1)
     if "area_pre_owned_house_transactions" in df.columns:
         df["preowned_area_lag1"] = g["area_pre_owned_house_transactions"].shift(1)
 

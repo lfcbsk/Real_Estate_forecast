@@ -2,7 +2,9 @@ import json
 import logging
 from pathlib import Path
 from typing import Optional
+
 import pandas as pd
+
 from src.models.model_config import ModelConfig
 
 # Cấu hình logger
@@ -28,9 +30,7 @@ def save_reference_dataset(
         # Lưu parquet với engine pyarrow (chuẩn công nghiệp, xử lý schema tốt hơn)
         df.to_parquet(path, index=False, engine="pyarrow", compression="snappy")
 
-        logger.info(
-            f" Saved reference dataset ({len(df)} rows, {len(df.columns)} cols) -> {path}"
-        )
+        logger.info(f" Saved reference dataset ({len(df)} rows, {len(df.columns)} cols) -> {path}")
         return path
 
     except Exception as e:
@@ -45,9 +45,7 @@ def load_reference_dataset() -> Optional[pd.DataFrame]:
     path = Path(ModelConfig.REFERENCE_DATA_PATH)
 
     if not path.exists():
-        logger.warning(
-            f"Reference dataset not found at {path}. Drift detection will use current data as baseline."
-        )
+        logger.warning(f"Reference dataset not found at {path}. Drift detection will use current data as baseline.")
         return None
 
     try:
@@ -76,18 +74,14 @@ def save_reference_statistics(df: pd.DataFrame) -> Path:
                 "dtype": str(col_data.dtype),
                 "count": int(total_count - null_count),
                 "null_count": null_count,
-                "null_pct": (
-                    round(null_count / total_count, 4) if total_count > 0 else 0.0
-                ),
+                "null_pct": (round(null_count / total_count, 4) if total_count > 0 else 0.0),
                 "mean": float(col_data.mean()) if null_count < total_count else None,
                 "std": (
                     float(col_data.std(ddof=0)) if null_count < total_count else None
                 ),  # ddof=0: population std dev
                 "min": float(col_data.min()) if null_count < total_count else None,
                 "max": float(col_data.max()) if null_count < total_count else None,
-                "median": (
-                    float(col_data.median()) if null_count < total_count else None
-                ),
+                "median": (float(col_data.median()) if null_count < total_count else None),
             }
 
         # 2. Thống kê cho cột phân loại (Categorical / Object / String)
@@ -105,16 +99,12 @@ def save_reference_statistics(df: pd.DataFrame) -> Path:
                 "dtype": str(col_data.dtype),
                 "count": int(total_count - null_count),
                 "null_count": null_count,
-                "null_pct": (
-                    round(null_count / total_count, 4) if total_count > 0 else 0.0
-                ),
+                "null_pct": (round(null_count / total_count, 4) if total_count > 0 else 0.0),
                 "unique_count": int(col_data.nunique()),
                 "top_value": str(top_val) if top_val is not None else None,
                 "top_freq": top_freq,
                 "top_freq_pct": (
-                    round(top_freq / (total_count - null_count), 4)
-                    if (total_count - null_count) > 0
-                    else 0.0
+                    round(top_freq / (total_count - null_count), 4) if (total_count - null_count) > 0 else 0.0
                 ),
             }
         else:

@@ -78,10 +78,7 @@ def _report_missing(df: pd.DataFrame, label: str) -> None:
     else:
         total_cells = len(df) * len(df.columns)
         pct = missing.sum() / total_cells * 100
-        print(
-            f"[ingest] {label}: {len(missing)} cột có missing "
-            f"({missing.sum():,} cells, {pct:.2f}% tổng)"
-        )
+        print(f"[ingest] {label}: {len(missing)} cột có missing " f"({missing.sum():,} cells, {pct:.2f}% tổng)")
         for col, cnt in missing.items():
             print(f"         • {col:<55} {cnt:>6,} ({cnt/len(df)*100:.1f}%)")
 
@@ -90,35 +87,22 @@ def _handle_missing(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
 
-    zero_cols = [
-        c
-        for c in df.columns
-        if any(c.startswith(p) for p in _ZERO_FILL_PATTERNS) and c != TARGET_LOG
-    ]
+    zero_cols = [c for c in df.columns if any(c.startswith(p) for p in _ZERO_FILL_PATTERNS) and c != TARGET_LOG]
     df[zero_cols] = df[zero_cols].fillna(0)
 
     exog_cols = [c for c in df.columns if any(pat in c for pat in _EXOG_PATTERNS)]
     if exog_cols:
-        df[exog_cols] = (
-            df.sort_values(["sector", "date"])
-            .groupby("sector")[exog_cols]
-            .transform(lambda x: x.ffill())
-        )
+        df[exog_cols] = df.sort_values(["sector", "date"]).groupby("sector")[exog_cols].transform(lambda x: x.ffill())
         df[exog_cols] = df[exog_cols].fillna(0)
 
     remaining_num = [
         c
         for c in df.select_dtypes(include="number").columns
-        if df[c].isnull().any()
-        and c not in zero_cols
-        and c not in exog_cols
-        and c != TARGET_LOG
+        if df[c].isnull().any() and c not in zero_cols and c not in exog_cols and c != TARGET_LOG
     ]
     if remaining_num:
         df[remaining_num] = (
-            df.sort_values(["sector", "date"])
-            .groupby("sector")[remaining_num]
-            .transform(lambda x: x.ffill())
+            df.sort_values(["sector", "date"]).groupby("sector")[remaining_num].transform(lambda x: x.ffill())
         )
         df[remaining_num] = df[remaining_num].fillna(0)
 
@@ -179,9 +163,7 @@ def load_and_merge(
     df = df.sort_values(["date", "sector"]).reset_index(drop=True)
 
     print(f"[ingest] Shape      : {df.shape[0]:,} rows × {df.shape[1]} cols")
-    print(
-        f"[ingest] Date range : {df['date'].min().date()} → {df['date'].max().date()}"
-    )
+    print(f"[ingest] Date range : {df['date'].min().date()} → {df['date'].max().date()}")
     print(f"[ingest] Sectors    : {df['sector'].nunique()}")
     print(f"[ingest] Zero rate  : {(df[TARGET] == 0).mean():.1%}")
 
@@ -194,9 +176,7 @@ def sort_data(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def split_train_test(
-    df: pd.DataFrame, test_ratio: float = 0.2
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def split_train_test(df: pd.DataFrame, test_ratio: float = 0.2) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     df = sort_data(df)
 
@@ -208,12 +188,8 @@ def split_train_test(
     test_df = df[df["date"] >= split_date].copy()
 
     print(f"Split date : {split_date}")
-    print(
-        f"Train      : {train_df.shape} | {train_df['date'].min()} → {train_df['date'].max()}"
-    )
-    print(
-        f"Test       : {test_df.shape}  | {test_df['date'].min()} → {test_df['date'].max()}"
-    )
+    print(f"Train      : {train_df.shape} | {train_df['date'].min()} → {train_df['date'].max()}")
+    print(f"Test       : {test_df.shape}  | {test_df['date'].min()} → {test_df['date'].max()}")
     print(f"Train ratio: {len(train_df)/len(df):.2%}")
 
     return train_df, test_df
