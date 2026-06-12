@@ -196,7 +196,25 @@ This writes `artifacts/reference.parquet` and `artifacts/reference_stats.json`.
 
 ### 5. Run drift → retrain → registry orchestration
 
-When new data arrives, the orchestrator compares current data against the reference baseline, decides whether to retrain, evaluates holdout metrics, and promotes the model only if registry gates pass.
+Triggered by GitHub Action (`orchestration.yml`) or manually:
+
+```
+GitHub Action
+      ↓
+orchestrator.py
+      ↓
+load data (CSVs)
+      ↓
+load prod model (artifacts/model.onnx)
+      ↓
+detect_data_drift()          ← src/monitoring/detect_drift.py
+      ↓
+severity == low?
+      ├── YES → stop
+      └── NO → retrain → evaluate → registry gate → promote
+                                    ↓
+                         artifacts/reference.parquet updated
+```
 
 ```bash
 # Fast retrain (no Optuna) — recommended for routine checks
@@ -206,6 +224,9 @@ uv run python -m src.pipeline.orchestrator --tune false --promote true
 uv run python -m src.pipeline.orchestrator --tune true --promote true --n-trials 10
 ```
 
+- **Reference baseline:** `artifacts/reference.parquet` (auto-created on first run if missing; refreshed on promote)
+- **Drift reports:** saved under `reports/`
+
 **Registry gates** (`configs/config.yaml` → `orchestration.registry`):
 
 | Gate | Default | Meaning |
@@ -214,14 +235,6 @@ uv run python -m src.pipeline.orchestrator --tune true --promote true --n-trials
 | `min_r2` | 0.0 | Minimum R² |
 | `max_mape` | 100.0 | Maximum MAPE (%) |
 | `require_improvement_over_current` | false | New model must beat current score |
-
-Drift reports are saved under `reports/`.
-
-**Flow:**
-
-```
-New data → drift vs reference → retrain? → holdout eval → gates pass? → promote to artifacts/
-```
 
 ### 6. Start the API
 

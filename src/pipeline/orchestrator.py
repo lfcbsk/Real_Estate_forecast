@@ -1,7 +1,9 @@
 """
 Drift check -> retrain decision -> registry gate orchestration.
 
-Run after new data arrives to decide whether to retrain and promote a model.
+Flow (GitHub Action / CLI):
+    load data -> load prod model -> detect_data_drift()
+    -> severity low? stop : retrain -> evaluate -> registry gate -> promote
 """
 
 from __future__ import annotations
@@ -9,18 +11,14 @@ from __future__ import annotations
 import pickle
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
 from src.models.model_config import ModelConfig
+from src.models.model_registry import ModelRegistry
 from src.models.retrain import retrain_model, save_artifacts, save_onnx_model
-from src.monitoring.detect_drift import (
-    analyze_feature_drift_stats,
-    check_data_quality_drift,
-    detect_concept_drift_comprehensive,
-    detect_distribution_drift,
-)
+from src.monitoring.detect_drift import detect_data_drift
 from src.monitoring.log_report import save_drift_report
 from src.monitoring.reference import load_reference_dataset, save_reference_dataset
 from src.pipeline.evaluation import evaluate_holdout
@@ -39,9 +37,7 @@ TARGET = cfg["target"]["column"]
 TARGET_TRANSFORM = cfg["target"]["transform"]
 TARGET_LOG = f"log_{TARGET}" if TARGET_TRANSFORM == "log1p" else TARGET
 
-ORCH_CFG = cfg.get("orchestration", {})
-DRIFT_CFG = ORCH_CFG.get("drift", {})
-REGISTRY_CFG = ORCH_CFG.get("registry", {})
+REGISTRY_CFG = cfg.get("orchestration", {}).get("registry", {})
 
 
 @dataclass
@@ -57,7 +53,9 @@ class RegistryGate:
             min_competition_score=float(REGISTRY_CFG.get("min_competition_score", 0.55)),
             min_r2=float(REGISTRY_CFG.get("min_r2", 0.0)),
             max_mape=float(REGISTRY_CFG.get("max_mape", 100.0)),
-            require_improvement_over_current=bool(REGISTRY_CFG.get("require_improvement_over_current", False)),
+            require_improvement_over_current=bool(
+                REGISTRY_CFG.get("require_improvement_over_current", False)
+            ),
         )
 
 
@@ -72,95 +70,73 @@ class OrchestrationResult:
     messages: List[str] = field(default_factory=list)
 
 
-def detect_drift_against_reference(
+def load_data(
+    new_data: Optional[pd.DataFrame] = None,
+    test_ratio: float = 0.2,
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Load and split training data from CSVs (optionally merge new rows)."""
+    df_train, df_test = ingest_run(test_ratio=test_ratio, save_outputs=False)
+
+    if new_data is None:
+        return df_train, df_test
+
+    combined = (
+        pd.concat([df_train, df_test, new_data])
+        .drop_duplicates(subset=["date", "sector"], keep="last")
+        .sort_values(["sector", "date"])
+        .reset_index(drop=True)
+    )
+    split_idx = int(len(combined) * (1 - test_ratio))
+    return combined.iloc[:split_idx].copy(), combined.iloc[split_idx:].copy()
+
+
+def load_production_model() -> Optional[ModelRegistry]:
+    """Load the production ONNX model from artifacts/ (returns None if missing)."""
+    if not ModelConfig.MODEL_PATH.exists():
+        return None
+    try:
+        return ModelRegistry()
+    except Exception:
+        return None
+
+
+def prepare_drift_dataframe(
     reference_df: pd.DataFrame,
     current_df: pd.DataFrame,
-    model: Any = None,
-    feature_cols: Optional[List[str]] = None,
-    target_col: Optional[str] = None,
-    alpha: float = 0.05,
-    mae_threshold: float = 0.2,
-) -> Dict[str, Any]:
-    """Compare incoming data against a saved reference baseline."""
-    quality_report = check_data_quality_drift(reference_df, current_df)
+) -> Tuple[pd.DataFrame, List[str], float]:
+    """
+    Build a featured dataset for detect_data_drift().
 
-    if feature_cols is None:
-        feature_cols = [
-            c
-            for c in reference_df.select_dtypes(include="number").columns
-            if c in current_df.columns and c not in {target_col}
-        ]
+    Reference rows come first chronologically; split_ratio tells detect_data_drift
+    where to cut between reference and current windows.
+    """
+    combined_raw = (
+        pd.concat([reference_df, current_df])
+        .drop_duplicates(subset=["date", "sector"], keep="last")
+        .sort_values(["date", "sector"])
+        .reset_index(drop=True)
+    )
 
-    feature_report: Dict[str, Any] = {}
-    drifted_features_count = 0
-    for col in feature_cols:
-        stats = analyze_feature_drift_stats(reference_df[col], current_df[col], alpha)
-        feature_report[col] = stats
-        if stats.get("ks_drift") or stats.get("psi_drift"):
-            drifted_features_count += 1
+    sector_stats = compute_sector_stats(reference_df, TARGET_LOG)
+    sector_profile = build_sector_profile(reference_df)
+    featured = create_training_features(
+        combined_raw,
+        target_col=TARGET_LOG,
+        sector_stats=sector_stats,
+        sector_profile=sector_profile,
+        keep_nan=False,
+    )
+    featured = featured.sort_values("date").reset_index(drop=True)
+    feature_cols = get_valid_features(featured)
 
-    drift_ratio = drifted_features_count / len(feature_cols) if feature_cols else 0.0
-
-    label_report = None
-    if target_col and target_col in reference_df.columns and target_col in current_df.columns:
-        label_report = detect_distribution_drift(
-            reference_df[target_col], current_df[target_col], "Target/Label", alpha
-        )
-
-    concept_report = None
-    if (
-        model is not None
-        and target_col
-        and feature_cols
-        and target_col in reference_df.columns
-        and target_col in current_df.columns
-    ):
-        concept_report = detect_concept_drift_comprehensive(
-            reference_df[feature_cols],
-            reference_df[target_col],
-            current_df[feature_cols],
-            current_df[target_col],
-            model,
-            mae_threshold,
-        )
-
-    concept_flag = bool(concept_report and concept_report.get("concept_drift_detected"))
-    quality_flag = quality_report["quality_drift_detected"]
-    feature_ratio_threshold = float(DRIFT_CFG.get("feature_drift_ratio_threshold", 0.2))
-
-    if concept_flag or drift_ratio > 0.5 or quality_flag:
-        severity = "high"
-        recommendation = "URGENT: Retrain model immediately. Check data pipeline for quality issues."
-    elif drift_ratio > feature_ratio_threshold or (label_report and label_report["severity"] == "medium"):
-        severity = "medium"
-        recommendation = "WARNING: Monitor closely. Prepare retraining pipeline."
-    else:
-        severity = "low"
-        recommendation = "OK: System is stable. Continue routine monitoring."
-
-    return {
-        "overall_drift_detected": severity != "low",
-        "severity": severity,
-        "recommendation": recommendation,
-        "summary": {
-            "feature_drift_ratio": round(drift_ratio, 3),
-            "data_quality_issues_count": len(quality_report["issues"]),
-            "concept_drift_detected": concept_flag,
-            "data_quality": quality_report,
-            "feature_drift": feature_report,
-            "label_drift": label_report,
-            "concept_drift": concept_report,
-        },
-    }
+    split_ratio = len(reference_df) / len(featured) if len(featured) else 0.5
+    split_ratio = min(max(split_ratio, 0.01), 0.99)
+    return featured, feature_cols, split_ratio
 
 
 def should_retrain(drift_report: Dict[str, Any]) -> bool:
-    """Decide if drift severity warrants a retrain."""
-    severity_levels = DRIFT_CFG.get("severity_for_retrain", ["medium", "high"])
-    severity = drift_report.get("severity", "low")
-    if severity in severity_levels:
-        return True
-    return bool(drift_report.get("overall_drift_detected"))
+    """Retrain when drift severity is not low."""
+    return drift_report.get("severity", "low") != "low"
 
 
 def evaluate_for_registry(
@@ -176,7 +152,9 @@ def evaluate_for_registry(
     mape = metrics.get("mape", float("inf"))
 
     if score < gate.min_competition_score:
-        messages.append(f"Competition score {score:.4f} below minimum {gate.min_competition_score}")
+        messages.append(
+            f"Competition score {score:.4f} below minimum {gate.min_competition_score}"
+        )
     if r2 < gate.min_r2:
         messages.append(f"R2 {r2:.4f} below minimum {gate.min_r2}")
     if mape > gate.max_mape:
@@ -185,7 +163,9 @@ def evaluate_for_registry(
     if gate.require_improvement_over_current and current_metrics:
         current_score = current_metrics.get("competition_score", 0.0)
         if score <= current_score:
-            messages.append(f"New score {score:.4f} did not beat current {current_score:.4f}")
+            messages.append(
+                f"New score {score:.4f} did not beat current {current_score:.4f}"
+            )
 
     eligible = len(messages) == 0
     if eligible:
@@ -199,7 +179,7 @@ def promote_to_registry(
     reference_df: pd.DataFrame,
     artifact_dir: str | Path = ModelConfig.ARTIFACT_DIR,
 ) -> Path:
-    """Persist ONNX model, pickles, and refresh reference baseline."""
+    """Persist ONNX model, pickles, and refresh artifacts/reference.parquet."""
     artifact_dir = Path(artifact_dir)
     artifact_dir.mkdir(parents=True, exist_ok=True)
 
@@ -224,65 +204,45 @@ def run_orchestration(
     promote: bool = True,
     current_metrics: Optional[Dict[str, Any]] = None,
 ) -> OrchestrationResult:
-    """
-    Full workflow:
-    1. Load/combine data
-    2. Drift check vs reference
-    3. Retrain if needed
-    4. Holdout evaluation + registry gate
-    5. Promote artifacts when eligible
-    """
     messages: List[str] = []
 
-    if new_data is None:
-        df_train, df_test = ingest_run(test_ratio=test_ratio, save_outputs=False)
-        combined = pd.concat([df_train, df_test]).sort_values(["sector", "date"])
-    else:
-        df_train, df_test = ingest_run(test_ratio=test_ratio, save_outputs=False)
-        combined = pd.concat([df_train, df_test, new_data]).drop_duplicates(subset=["date", "sector"], keep="last")
-        combined = combined.sort_values(["sector", "date"]).reset_index(drop=True)
-        split_idx = int(len(combined) * (1 - test_ratio))
-        df_train = combined.iloc[:split_idx].copy()
-        df_test = combined.iloc[split_idx:].copy()
+    # 1. Load data
+    df_train, df_test = load_data(new_data=new_data, test_ratio=test_ratio)
+    messages.append(f"Loaded data: train={len(df_train)}, test={len(df_test)}")
 
+    # 2. Load / bootstrap reference baseline (artifacts/reference.parquet)
     reference_df = reference_df or load_reference_dataset()
     if reference_df is None:
         reference_df = df_train.copy()
-        messages.append("No reference dataset found; using training split as baseline")
+        save_reference_dataset(reference_df)
+        messages.append("No reference found; saved training split to artifacts/reference.parquet")
+    else:
+        messages.append(f"Loaded reference baseline ({len(reference_df)} rows)")
 
-    sector_stats = compute_sector_stats(df_train, TARGET_LOG)
-    sector_profile = build_sector_profile(df_train)
-    featured_train = create_training_features(
-        df_train,
+    # 3. Load production model
+    prod_model = model or load_production_model()
+    if prod_model is None:
+        messages.append("No production model in artifacts/ — concept/prediction drift skipped")
+    else:
+        messages.append("Loaded production model from artifacts/")
+
+    # 4. Drift detection via detect_data_drift()
+    current_df = df_test if len(df_test) > 0 else df_train.tail(max(1, len(df_train) // 5))
+    drift_df, feature_cols, split_ratio = prepare_drift_dataframe(reference_df, current_df)
+
+    drift_report = detect_data_drift(
+        drift_df,
+        model=prod_model,
         target_col=TARGET_LOG,
-        sector_stats=sector_stats,
-        sector_profile=sector_profile,
-        keep_nan=False,
-    )
-    feature_cols = get_valid_features(featured_train)
-
-    current_slice = df_test if len(df_test) > 0 else combined.tail(max(1, len(combined) // 5))
-    featured_current = create_training_features(
-        pd.concat([df_train, current_slice]).sort_values(["sector", "date"]),
-        target_col=TARGET_LOG,
-        sector_stats=sector_stats,
-        sector_profile=sector_profile,
-        keep_nan=False,
-    )
-    featured_current = featured_current[featured_current["date"].isin(current_slice["date"])]
-
-    drift_report = detect_drift_against_reference(
-        reference_df=reference_df,
-        current_df=featured_current,
-        model=model,
         feature_cols=feature_cols,
-        target_col=TARGET_LOG,
+        split_ratio=split_ratio,
     )
     save_drift_report(drift_report)
 
+    severity = drift_report.get("severity", "low")
     retrain_needed = should_retrain(drift_report)
-    messages.append(f"Drift severity: {drift_report['severity']}")
-    messages.append(f"Retrain recommended: {retrain_needed}")
+    messages.append(f"Drift severity: {severity}")
+    messages.append(f"Retrain needed: {retrain_needed}")
 
     result = OrchestrationResult(
         drift_report=drift_report,
@@ -291,45 +251,55 @@ def run_orchestration(
         messages=messages,
     )
 
-    if not retrain_needed:
-        messages.append("Skipping retrain; model remains in registry")
+    # 5. severity == low → stop
+    if severity == "low":
+        messages.append("Severity is low — stopping without retrain")
         return result
 
     result.retrain_triggered = True
 
+    # 6. Retrain
     if tune:
         from src.pipeline.training import run_pipeline
 
         pipeline_result = run_pipeline(df_train=df_train, tune=True, n_trials=n_trials)
         eval_metrics = pipeline_result.get("test_results", {})
-        zero_sectors = pipeline_result.get("zero_sectors", set())
         messages.append("Full tuning pipeline completed")
-        eligible, gate_messages = evaluate_for_registry(eval_metrics, current_metrics=current_metrics)
+
+        eligible, gate_messages = evaluate_for_registry(
+            eval_metrics, current_metrics=current_metrics
+        )
         result.evaluation = eval_metrics
         result.registry_eligible = eligible
         result.messages.extend(gate_messages)
-        result.registry_promoted = eligible and promote
-        if result.registry_promoted:
-            result.messages.append("Model promoted via training pipeline")
+
+        if eligible and promote:
+            save_reference_dataset(df_train)
+            result.registry_promoted = True
+            result.messages.append("Model promoted via training pipeline; reference.parquet updated")
         elif not eligible:
             result.messages.append("Model not promoted — registry gates not met")
         return result
 
     zero_sectors, _ = build_zero_sector_mask(df_train)
     artifacts = retrain_model(df_train, cat_params or {}, model_name="ORCHESTRATION RETRAIN")
+    messages.append("Fast retrain completed (no Optuna tuning)")
+
+    # 7. Evaluate
     eval_metrics = evaluate_holdout(
         model=artifacts["model"],
         train_df=df_train,
         test_df=df_test,
         zero_sectors=zero_sectors,
     )
-    messages.append("Fast retrain completed (no Optuna tuning)")
-
     result.evaluation = eval_metrics
+
+    # 8. Registry gate
     eligible, gate_messages = evaluate_for_registry(eval_metrics, current_metrics=current_metrics)
     result.registry_eligible = eligible
     result.messages.extend(gate_messages)
 
+    # 9. Promote
     if eligible and promote:
         promote_to_registry(
             artifacts=artifacts,
@@ -337,7 +307,7 @@ def run_orchestration(
             reference_df=df_train,
         )
         result.registry_promoted = True
-        result.messages.append("Model promoted to registry")
+        result.messages.append("Model promoted to artifacts/; reference.parquet updated")
     elif not eligible:
         result.messages.append("Model not promoted — registry gates not met")
 
