@@ -53,9 +53,7 @@ class RegistryGate:
             min_competition_score=float(REGISTRY_CFG.get("min_competition_score", 0.55)),
             min_r2=float(REGISTRY_CFG.get("min_r2", 0.0)),
             max_mape=float(REGISTRY_CFG.get("max_mape", 100.0)),
-            require_improvement_over_current=bool(
-                REGISTRY_CFG.get("require_improvement_over_current", False)
-            ),
+            require_improvement_over_current=bool(REGISTRY_CFG.get("require_improvement_over_current", False)),
         )
 
 
@@ -152,9 +150,7 @@ def evaluate_for_registry(
     mape = metrics.get("mape", float("inf"))
 
     if score < gate.min_competition_score:
-        messages.append(
-            f"Competition score {score:.4f} below minimum {gate.min_competition_score}"
-        )
+        messages.append(f"Competition score {score:.4f} below minimum {gate.min_competition_score}")
     if r2 < gate.min_r2:
         messages.append(f"R2 {r2:.4f} below minimum {gate.min_r2}")
     if mape > gate.max_mape:
@@ -163,9 +159,7 @@ def evaluate_for_registry(
     if gate.require_improvement_over_current and current_metrics:
         current_score = current_metrics.get("competition_score", 0.0)
         if score <= current_score:
-            messages.append(
-                f"New score {score:.4f} did not beat current {current_score:.4f}"
-            )
+            messages.append(f"New score {score:.4f} did not beat current {current_score:.4f}")
 
     eligible = len(messages) == 0
     if eligible:
@@ -266,9 +260,7 @@ def run_orchestration(
         eval_metrics = pipeline_result.get("test_results", {})
         messages.append("Full tuning pipeline completed")
 
-        eligible, gate_messages = evaluate_for_registry(
-            eval_metrics, current_metrics=current_metrics
-        )
+        eligible, gate_messages = evaluate_for_registry(eval_metrics, current_metrics=current_metrics)
         result.evaluation = eval_metrics
         result.registry_eligible = eligible
         result.messages.extend(gate_messages)

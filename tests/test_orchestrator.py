@@ -54,11 +54,7 @@ def drifted_current_df(reference_df):
 
 @pytest.mark.unit
 def test_detect_data_drift_stable_combined(reference_df, stable_current_df):
-    combined = (
-        pd.concat([reference_df, stable_current_df])
-        .sort_values("date")
-        .reset_index(drop=True)
-    )
+    combined = pd.concat([reference_df, stable_current_df]).sort_values("date").reset_index(drop=True)
     split_ratio = len(reference_df) / len(combined)
     report = detect_data_drift(
         combined,
@@ -72,11 +68,7 @@ def test_detect_data_drift_stable_combined(reference_df, stable_current_df):
 
 @pytest.mark.unit
 def test_detect_data_drift_drifted_combined(reference_df, drifted_current_df):
-    combined = (
-        pd.concat([reference_df, drifted_current_df])
-        .sort_values("date")
-        .reset_index(drop=True)
-    )
+    combined = pd.concat([reference_df, drifted_current_df]).sort_values("date").reset_index(drop=True)
     split_ratio = len(reference_df) / len(combined)
     report = detect_data_drift(
         combined,
