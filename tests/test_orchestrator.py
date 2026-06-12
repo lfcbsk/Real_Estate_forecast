@@ -1,30 +1,31 @@
 """Tests for drift -> retrain -> registry orchestration."""
-import pytest
-import pandas as pd
-import numpy as np
-from unittest.mock import patch, MagicMock
 
-from src.pipeline.orchestrator import (
-    RegistryGate,
-    detect_drift_against_reference,
-    should_retrain,
-    evaluate_for_registry,
-    run_orchestration,
-)
+from unittest.mock import patch
+
+import numpy as np
+import pandas as pd
+import pytest
+
 from src.monitoring.log_report import evaluate_retrain_decision
+from src.pipeline.orchestrator import (RegistryGate,
+                                       detect_drift_against_reference,
+                                       evaluate_for_registry,
+                                       run_orchestration, should_retrain)
 
 
 @pytest.fixture
 def reference_df():
     rng = np.random.default_rng(seed=42)
     n = 100
-    return pd.DataFrame({
-        "date": pd.date_range("2023-01-01", periods=n, freq="D"),
-        "sector": np.tile([1, 2], n // 2),
-        "feature_1": rng.normal(0, 1, n),
-        "feature_2": rng.normal(10, 2, n),
-        "log_amount_new_house_transactions": rng.normal(5, 0.5, n),
-    })
+    return pd.DataFrame(
+        {
+            "date": pd.date_range("2023-01-01", periods=n, freq="D"),
+            "sector": np.tile([1, 2], n // 2),
+            "feature_1": rng.normal(0, 1, n),
+            "feature_2": rng.normal(10, 2, n),
+            "log_amount_new_house_transactions": rng.normal(5, 0.5, n),
+        }
+    )
 
 
 @pytest.fixture
@@ -38,12 +39,14 @@ def stable_current_df(reference_df):
 def drifted_current_df(reference_df):
     rng = np.random.default_rng(seed=99)
     n = len(reference_df)
-    return pd.DataFrame({
-        "date": pd.date_range("2023-06-01", periods=n, freq="D"),
-        "feature_1": rng.normal(8, 1, n),
-        "feature_2": rng.normal(10, 2, n),
-        "log_amount_new_house_transactions": rng.normal(5, 0.5, n),
-    })
+    return pd.DataFrame(
+        {
+            "date": pd.date_range("2023-06-01", periods=n, freq="D"),
+            "feature_1": rng.normal(8, 1, n),
+            "feature_2": rng.normal(10, 2, n),
+            "log_amount_new_house_transactions": rng.normal(5, 0.5, n),
+        }
+    )
 
 
 @pytest.mark.unit
