@@ -1,9 +1,13 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "realestate-forecast"
 version = "0.1.0"
 description = "Real Estate Forecast API and Dashboard"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 
 dependencies = [
     "pandas>=2.0.0",
@@ -25,6 +29,8 @@ dependencies = [
     "python-dateutil>=2.8.0",
 
     "evidently>=0.4.0",
+    "scipy>=1.11.0",
+    "pyarrow>=14.0.0",
 
     "pyyaml>=6.0",
 
@@ -48,9 +54,17 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]  # <-- Dòng này thay thế hoàn toàn cho sys.path.insert!
+pythonpath = ["."]
 addopts = "-v --strict-markers"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
 markers = [
     "unit: fast, isolated unit tests",
     "integration: slower tests involving multiple components",
+    "e2e: end-to-end tests requiring full stack or real artifacts",
 ]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

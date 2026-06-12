@@ -55,6 +55,21 @@ def save_monitoring_report(
         raise
 
 
+def save_drift_report(
+    report: Dict[str, Any],
+    output_dir: str = "reports",
+    model_name: str = "catboost",
+    model_version: str = "production",
+) -> str:
+    """Persist a drift report JSON (alias for monitoring reports)."""
+    return save_monitoring_report(
+        report=report,
+        model_name=model_name,
+        model_version=model_version,
+        output_dir=output_dir,
+    )
+
+
 def evaluate_retrain_decision(comprehensive_report: Dict[str, Any]) -> Dict[str, Any]:
     """
     Đánh giá xem có cần retrain model hay không dựa trên báo cáo toàn diện.
@@ -63,7 +78,7 @@ def evaluate_retrain_decision(comprehensive_report: Dict[str, Any]) -> Dict[str,
     summary = comprehensive_report.get("summary", {})
     details = comprehensive_report.get("details", {})
     
-    severity = comprehensive_report.get("severity", "LOW")
+    severity = comprehensive_report.get("severity", "low").lower()
     drift_ratio = summary.get("feature_drift_ratio", 0.0)
     concept_drift_detected = summary.get("concept_drift_detected", False)
     quality_issues_count = summary.get("data_quality_issues_count", 0)
@@ -90,13 +105,13 @@ def evaluate_retrain_decision(comprehensive_report: Dict[str, Any]) -> Dict[str,
         reasons.append(f"Concept drift detected. MAE degraded by {mae_degradation:.1%}.")
 
     # --- RULE 3: Severe Feature/Label Drift ---
-    elif severity == "HIGH" or drift_ratio > 0.5:
+    elif severity == "high" or drift_ratio > 0.5:
         decision = "RETRAIN"
         priority = "HIGH"
         reasons.append(f"High severity data drift detected ({drift_ratio:.1%} features affected).")
 
     # --- RULE 4: Moderate Drift (Cảnh báo) ---
-    elif severity == "MEDIUM" or drift_ratio > 0.2:
+    elif severity == "medium" or drift_ratio > 0.2:
         decision = "MONITOR"
         priority = "MEDIUM"
         reasons.append("Moderate drift detected. Prepare retraining pipeline, but no immediate action required.")

@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import pandas as pd
 import optuna
@@ -8,7 +10,7 @@ from src.pipeline.features import (
     create_training_features, get_valid_features,
     apply_zero_sector_rule, build_zero_sector_mask,
 )
-from src.models.retrain import *
+from src.models.retrain import retrain_model, save_artifacts, save_onnx_model
 from src.pipeline.ingest_preprocess import run as ingest_run
 import mlflow
 import mlflow.catboost
@@ -406,7 +408,7 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
                 artifact_path="catboost_production_model"
             )
         save_onnx_model(production_model)
-        save_artifacts(production_model)
+        save_artifacts(production_artifacts)
         with open("artifacts/zero_sectors.pkl", "wb") as f:
             pickle.dump(
                 zero_sectors,

@@ -8,7 +8,6 @@ from src.pipeline.features import (
     create_training_features, get_valid_features,
     apply_zero_sector_rule, build_zero_sector_mask,
 )
-from src.training import build_catboost
 from pathlib import Path
 import pickle
 from src.pipeline.ingest_preprocess import run as ingest_run
@@ -61,6 +60,8 @@ def retrain_model(
 
     X = featured[feats].fillna(0)
     y = featured[TARGET_LOG]
+
+    from src.pipeline.training import build_catboost
 
     model = build_catboost(cat_params)
 

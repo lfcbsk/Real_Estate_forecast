@@ -12,3 +12,13 @@ optimization:
 
 general:
   random_seed: 42
+
+orchestration:
+  drift:
+    feature_drift_ratio_threshold: 0.2
+    severity_for_retrain: ["medium", "high"]
+  registry:
+    min_competition_score: 0.55
+    min_r2: 0.0
+    max_mape: 100.0
+    require_improvement_over_current: false

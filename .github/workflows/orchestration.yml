@@ -1,0 +1,63 @@
+name: Model Orchestration
+
+on:
+  workflow_dispatch:
+    inputs:
+      tune:
+        description: "Run full Optuna tuning pipeline"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      promote:
+        description: "Promote model to registry if gates pass"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  schedule:
+    # Weekly drift check (Monday 02:00 UTC)
+    - cron: "0 2 * * 1"
+
+jobs:
+  orchestrate:
+    name: Drift Check and Retrain
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.10
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]"
+
+      - name: Run tests before orchestration
+        run: uv run pytest tests/ -v -m "not e2e"
+
+      - name: Run orchestration
+        run: |
+          uv run python -m src.pipeline.orchestrator \
+            --tune "${{ github.event.inputs.tune || 'false' }}" \
+            --promote "${{ github.event.inputs.promote || 'true' }}"
+        continue-on-error: true
+
+      - name: Upload drift reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-reports
+          path: reports/
+          if-no-files-found: ignore

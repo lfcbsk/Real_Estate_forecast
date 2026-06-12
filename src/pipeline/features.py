@@ -241,14 +241,23 @@ def create_training_features(
         df["sector_zero_rate_train"] = (df["sector"].map(sector_stats["zero_rate"]))
         df["sector_cv_train"] = (df["sector"].map(sector_stats["cv"]))
 
-    # exogenous features
-    df["nearby_supply_lag1"] = (df.groupby("sector")["num_new_house_available_for_sale_nearby_sectors"].shift(1))
-    df["nearby_sellthrough_lag1"] = (df.groupby("sector")["period_new_house_sell_through_nearby_sectors"].shift(1))
+    # exogenous features (optional columns for minimal / partial datasets)
+    if "num_new_house_available_for_sale_nearby_sectors" in df.columns:
+        df["nearby_supply_lag1"] = (
+            df.groupby("sector")["num_new_house_available_for_sale_nearby_sectors"].shift(1)
+        )
+    if "period_new_house_sell_through_nearby_sectors" in df.columns:
+        df["nearby_sellthrough_lag1"] = (
+            df.groupby("sector")["period_new_house_sell_through_nearby_sectors"].shift(1)
+        )
 
     g = df.groupby("sector")
-    df["sellthrough_lag1"] = (g["period_new_house_sell_through"].shift(1))
-    df["nearby_price_lag1"] = (g["price_new_house_transactions_nearby_sectors"].shift(1))
-    df["preowned_area_lag1"] = (g["area_pre_owned_house_transactions"].shift(1))
+    if "period_new_house_sell_through" in df.columns:
+        df["sellthrough_lag1"] = g["period_new_house_sell_through"].shift(1)
+    if "price_new_house_transactions_nearby_sectors" in df.columns:
+        df["nearby_price_lag1"] = g["price_new_house_transactions_nearby_sectors"].shift(1)
+    if "area_pre_owned_house_transactions" in df.columns:
+        df["preowned_area_lag1"] = g["area_pre_owned_house_transactions"].shift(1)
 
     # Fill NA
     if not keep_nan:
@@ -262,6 +271,8 @@ def create_training_features(
         df[feature_cols] = (
             df.groupby("sector")[feature_cols]
             .ffill()
+            .bfill()
+            .fillna(0)
         )
 
     # ==================================================

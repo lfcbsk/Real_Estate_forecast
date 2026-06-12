@@ -31,7 +31,7 @@ def calculate_psi(expected: np.ndarray, actual: np.ndarray, buckets: int = 10) -
     return float(psi)
 
 
-def test_feature_drift_stats(ref: pd.Series, curr: pd.Series, alpha: float = 0.05) -> Dict[str, Any]:
+def analyze_feature_drift_stats(ref: pd.Series, curr: pd.Series, alpha: float = 0.05) -> Dict[str, Any]:
     """
     Run KS-test, Anderson-Darling và PSI for a feature.
     """
@@ -106,7 +106,7 @@ def detect_distribution_drift(ref_series: pd.Series, curr_series: pd.Series, nam
     """
     Wrapper check drift for Label or Prediction.
     """
-    stats = test_feature_drift_stats(ref_series, curr_series, alpha)
+    stats = analyze_feature_drift_stats(ref_series, curr_series, alpha)
     psi = stats.get("psi", 0)
     
     severity = "low"
@@ -225,7 +225,7 @@ def detect_data_drift(
     
     for col in numeric_cols:
         if col in ref_df.columns and col in curr_df.columns:
-            stats = test_feature_drift_stats(ref_df[col], curr_df[col], alpha)
+            stats = analyze_feature_drift_stats(ref_df[col], curr_df[col], alpha)
             feature_report[col] = stats
             if stats.get("ks_drift") or stats.get("psi_drift"):
                 drifted_features_count += 1
@@ -276,7 +276,7 @@ def detect_data_drift(
         recommendation = "OK: System is stable. Continue routine monitoring."
 
     return {
-        "overall_drift_detected": severity != "LOW",
+        "overall_drift_detected": severity != "low",
         "severity": severity,
         "recommendation": recommendation,
         "summary": {

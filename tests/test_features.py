@@ -164,11 +164,13 @@ def test_create_training_features_basic(sample_train_df):
 def test_create_training_features_no_nan_when_keep_nan_false(sample_train_df):
     """Test không có NaN khi keep_nan=False."""
     sector_stats = compute_sector_stats(sample_train_df, "log_amount_new_house_transactions")
+    sector_profile = build_sector_profile(sample_train_df)
     
     df_featured = create_training_features(
         sample_train_df,
         target_col="log_amount_new_house_transactions",
         sector_stats=sector_stats,
+        sector_profile=sector_profile,
         keep_nan=False
     )
     
@@ -180,16 +182,10 @@ def test_create_training_features_no_nan_when_keep_nan_false(sample_train_df):
 
 
 @pytest.mark.unit
-def test_cyclical_encoding():
-    df = pd.DataFrame({
-        "date": pd.date_range("2020-01-01", periods=12, freq="MS"),
-        "sector": [1] * 12,
-        "target": np.random.rand(12),
-    })
-    
+def test_cyclical_encoding(sample_train_df):
     df_featured = create_training_features(
-        df,
-        target_col="target",
+        sample_train_df,
+        target_col="log_amount_new_house_transactions",
         keep_nan=False
     )
     assert df_featured["month_sin"].between(-1, 1).all()

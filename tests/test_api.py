@@ -7,7 +7,8 @@ import pandas as pd
 import numpy as np
 from src.api.main import app
 
-@pytest.mark.integration
+pytestmark = pytest.mark.integration
+
 
 @pytest.fixture
 def client():
@@ -19,7 +20,7 @@ def client():
 def mock_model_registry():
     """Mock model registry."""
     registry = MagicMock()
-    registry.predict.return_value = np.array([5.0, 5.5, 6.0])
+    registry.predict.side_effect = lambda X: np.full(len(X), 5.0)
     registry.zero_sectors = {52, 95}
     return registry
 
@@ -31,6 +32,7 @@ def mock_train_data():
         "date": pd.date_range("2020-01-01", periods=100, freq="MS"),
         "sector": [1, 2, 3, 4] * 25,
         "amount_new_house_transactions": np.random.randint(100, 1000, 100),
+        "log_amount_new_house_transactions": np.log1p(np.random.randint(100, 1000, 100)),
     })
 
 
@@ -66,10 +68,10 @@ def test_forecast_success(mock_get_train_data, mock_get_registry, client, mock_m
     mock_get_train_data.return_value = mock_train_data
     
     # Mock forecast_next_year
-    with patch("src.pipeline.predict.forecast_next_year") as mock_forecast:
+    with patch("src.api.routes.forecast_next_year") as mock_forecast:
         mock_forecast.return_value = pd.DataFrame({
             "date": pd.date_range("2024-01-01", periods=12, freq="MS"),
-            "sector": [1] * 12,
+            "sector": ["1"] * 12,
             "pred_amount": [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210]
         })
         
