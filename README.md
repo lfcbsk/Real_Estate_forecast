@@ -8,7 +8,7 @@ MLOps pipeline for **China Real Estate Demand Prediction** — forecast monthly 
 
 ## Prerequisites
 
-- Python **3.10+**
+- **[uv](https://docs.astral.sh/uv/)** — Python package & environment manager (same tool used in CI)
 - Git
 - (Optional) Docker & Docker Compose
 - Kaggle account to download competition CSVs
@@ -81,14 +81,48 @@ RealEssate_forecast/
 
 ## End-to-end workflow
 
-### 1. Clone and install
+### 1. Clone and set up environment (uv)
+
+Install **uv** if you do not have it yet:
+
+```bash
+# macOS / Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Clone the repo and create the project environment:
 
 ```bash
 git clone https://github.com/lfcbsk/RealEssate_forecast.git
 cd RealEssate_forecast
 
-pip install -e ".[dev]"
+# Install Python 3.10 and create a local .venv (matches CI)
+uv python install 3.10
+uv venv --python 3.10
+uv pip install -e ".[dev]"
 ```
+
+Activate the virtual environment (optional — you can use `uv run` instead):
+
+```bash
+# macOS / Linux
+source .venv/bin/activate
+
+# Windows (PowerShell)
+.venv\Scripts\Activate.ps1
+```
+
+Run any command through uv without activating:
+
+```bash
+uv run python -m src.pipeline.training
+uv run pytest tests/ -v
+```
+
+> All commands below assume you are in the project root with the uv environment installed. Prefix with `uv run` if the venv is not activated.
 
 ### 2. Download data
 
@@ -113,7 +147,7 @@ Expected files (see `configs/config.yaml` → `data.train_dir`):
 Full pipeline: ingest → feature engineering → Optuna tuning → 5-fold time-series CV → holdout eval → production model → save artifacts.
 
 ```bash
-python -m src.pipeline.training
+uv run python -m src.pipeline.training
 ```
 
 This will:
@@ -166,10 +200,10 @@ When new data arrives, the orchestrator compares current data against the refere
 
 ```bash
 # Fast retrain (no Optuna) — recommended for routine checks
-python -m src.pipeline.orchestrator --tune false --promote true
+uv run python -m src.pipeline.orchestrator --tune false --promote true
 
 # Full retrain with Optuna tuning
-python -m src.pipeline.orchestrator --tune true --promote true --n-trials 10
+uv run python -m src.pipeline.orchestrator --tune true --promote true --n-trials 10
 ```
 
 **Registry gates** (`configs/config.yaml` → `orchestration.registry`):
@@ -192,7 +226,7 @@ New data → drift vs reference → retrain? → holdout eval → gates pass? �
 ### 6. Start the API
 
 ```bash
-uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
+uv run uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 | Endpoint | Method | Description |
@@ -217,7 +251,7 @@ curl -X POST http://localhost:8000/api/v1/forecast \
 ### 7. Start the Streamlit dashboard
 
 ```bash
-streamlit run src/app/streamlit_app.py
+uv run streamlit run src/app/streamlit_app.py
 ```
 
 Open [http://localhost:8501](http://localhost:8501) for forecasts, uploads, and drift views.
@@ -241,11 +275,11 @@ docker compose up --build
 ## Tests and CI
 
 ```bash
-# Run all tests
-pytest tests/ -v -m "not e2e"
+# Run all tests (same as CI)
+uv run pytest tests/ -v -m "not e2e"
 
 # With coverage (CI gate: 50%)
-pytest tests/ --cov=src --cov-fail-under=50
+uv run pytest tests/ --cov=src --cov-fail-under=50
 ```
 
 **GitHub Actions workflows:**
@@ -290,13 +324,13 @@ orchestration:
 
 ## Typical first-time checklist
 
-1. `pip install -e ".[dev]"`
+1. Install uv → `uv python install 3.10` → `uv venv --python 3.10` → `uv pip install -e ".[dev]"`
 2. Download CSVs → `data/train/`
-3. `python -m src.pipeline.training`
+3. `uv run python -m src.pipeline.training`
 4. Save reference baseline (step 4 above)
-5. `uvicorn src.api.main:app --reload`
-6. `streamlit run src/app/streamlit_app.py`
-7. `pytest tests/ -v` to verify everything works
+5. `uv run uvicorn src.api.main:app --reload`
+6. `uv run streamlit run src/app/streamlit_app.py`
+7. `uv run pytest tests/ -v` to verify everything works
 
 ---
 
