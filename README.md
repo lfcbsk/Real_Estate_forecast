@@ -21,7 +21,7 @@ Demo of streamlit web: [Forecast]( https://realestateforecast-mdeeacuhemmtfwlog3
 10. [Configuration](#10-configuration)
 11. [Tests & CI/CD](#11-tests--cicd)
 12. [Run command using Makefile](#13-quick-start-with-makefile)
-13. [License](#13-license)
+
 
 ---
 
@@ -643,6 +643,3 @@ make docker-down               # tear everything down
 
 > All `make` targets use `uv run ...` under the hood, so you don't need to manually activate the virtual environment.
 
-## 13. License
-
-See repository for license details.
