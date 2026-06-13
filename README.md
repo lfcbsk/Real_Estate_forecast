@@ -18,7 +18,8 @@ End-to-end **MLOps pipeline** for the Kaggle competition [**China Real Estate De
 9. [API reference](#9-api-reference)
 10. [Configuration](#10-configuration)
 11. [Tests & CI/CD](#11-tests--cicd)
-12. [License](#12-license)
+12. [Run command using Makefile](#13-quick-start-with-makefile)
+13. [License](#13-license)
 
 ---
 
@@ -564,7 +565,63 @@ uv run pytest tests/ --cov=src --cov-fail-under=50
 | `orchestration.yml` | weekly + manual | Drift check & optional retrain |
 
 ---
+---
 
-## 12. License
+## 13. Quick start with Makefile
+
+A `Makefile` is provided to wrap the most common commands above. Run all `make` commands from the **project root**.
+
+| Command | Equivalent to | Description |
+|---|---|---|
+| `make help` | — | List all available targets |
+| `make install` | A2 | Create `uv` venv (Python 3.10) + install deps (`.[dev]`) |
+| `make train` | C1 | Run the full training pipeline |
+| `make api` | D1 | Start FastAPI at http://localhost:8000 |
+| `make streamlit` | D2 | Start Streamlit dashboard at http://localhost:8501 |
+| `make orchestrate-fast` | E1 (fast) | Drift check + retrain (no Optuna), auto-promote if gate passed |
+| `make orchestrate-full` | E1 (full) | Drift check + retrain with Optuna (10 trials) |
+| `make test` | A3 / 11 | Run `pytest tests/ -v -m "not e2e"` |
+| `make test-cov` | 11 | Run pytest with coverage (`--cov=src --cov-fail-under=50`) |
+| `make lint` | — | Run `flake8` on `src/` and `tests/` |
+| `make docker-up` | F1 | `docker compose up --build` in `docker/` |
+| `make docker-up-gpu` | F2 | `docker compose --profile gpu up --build` |
+| `make docker-down` | — | Stop and remove containers |
+| `make clean` | — | Remove `__pycache__`, `.pytest_cache`, `.ruff_cache`, coverage files |
+
+### Typical first-run workflow
+
+```bash
+make install                # Phase A: setup environment & deps
+
+# Phase B (manual): download 3 Kaggle CSVs into data/train/
+#   kaggle competitions download -c china-real-estate-demand-prediction -p data/train/
+#   cd data/train && unzip *.zip && cd ../..
+
+make train                  # Phase C: train model, generate artifacts/
+
+make api                     # Phase D1: start API   (run in its own terminal)
+make streamlit                # Phase D2: start dashboard (run in another terminal)
+
+make test                    # Phase A3 / Section 11: sanity check
+```
+
+### MLOps / retrain workflow
+
+```bash
+make orchestrate-fast        # routine drift check, quick retrain if needed
+make orchestrate-full         # full retrain with Optuna tuning
+```
+
+### Docker stack (optional)
+
+```bash
+make docker-up                # API + Streamlit + Prometheus + Grafana
+make docker-up-gpu             # same, with GPU monitoring profile
+make docker-down               # tear everything down
+```
+
+> All `make` targets use `uv run ...` under the hood, so you don't need to manually activate the virtual environment.
+
+## 13. License
 
 See repository for license details.
