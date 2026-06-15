@@ -20,8 +20,8 @@ help:
 	@echo "  clean            - xoá cache, __pycache__, .pytest_cache"
 
 install:
-	$(UV) python install 3.10
-	$(UV) venv --python 3.10
+	$(UV) python install 3.11
+	$(UV) venv --python 3.11
 	$(UV) pip install -e ".[dev]"
 
 train:

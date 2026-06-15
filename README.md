@@ -299,7 +299,7 @@ RealEssate_forecast/
 | Tool | Version | Purpose |
 |------|---------|---------|
 | [uv](https://docs.astral.sh/uv/) | latest | Python env & deps (same as CI) |
-| Python | **3.10+** | Runtime |
+| Python | **3.11** | Runtime |
 | Git | any | Clone repo |
 | Kaggle account | — | Download competition CSVs |
 | Docker (optional) | — | Full stack + monitoring |
@@ -595,7 +595,7 @@ A `Makefile` is provided to wrap the most common commands above. Run all `make` 
 | Command | Equivalent to | Description |
 |---|---|---|
 | `make help` | — | List all available targets |
-| `make install` | A2 | Create `uv` venv (Python 3.10) + install deps (`.[dev]`) |
+| `make install` | A2 | Create `uv` venv (Python 3.11) + install deps (`.[dev]`) |
 | `make train` | C1 | Run the full training pipeline |
 | `make api` | D1 | Start FastAPI at http://localhost:8000 |
 | `make streamlit` | D2 | Start Streamlit dashboard at http://localhost:8501 |
