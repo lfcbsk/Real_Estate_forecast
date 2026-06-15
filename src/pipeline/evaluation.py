@@ -26,7 +26,6 @@ TARGET_LOG = f"log_{TARGET}" if TARGET_TRANSFORM == "log1p" else TARGET
 
 
 def competition_score(y_true, y_pred, eps=1e-12):
-
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
 

@@ -87,7 +87,13 @@ try:
         should_instrument_requests_inprogress=True,
         inprogress_name="http_requests_inprogress",
         inprogress_labels=True,
-        excluded_handlers=["/metrics", "/api/v1/health", "/docs", "/redoc", "/openapi.json"],
+        excluded_handlers=[
+            "/metrics",
+            "/api/v1/health",
+            "/docs",
+            "/redoc",
+            "/openapi.json",
+        ],
     ).instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
     logger.info("Prometheus metrics enabled at /metrics")
 except ImportError:

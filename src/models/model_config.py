@@ -4,7 +4,6 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class ModelConfig:
-
     ARTIFACT_DIR: Path = Path("artifacts")
 
     MODEL_PATH: Path = ARTIFACT_DIR / "model.onnx"

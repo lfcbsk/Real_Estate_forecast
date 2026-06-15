@@ -229,14 +229,24 @@ def test_upload_raw_success(mock_invalidate, mock_process, client):
     """Test upload 3 raw CSV files."""
     mock_process.return_value = (
         {
-            "main": {"filename": "new_house_transactions.csv", "total_rows": 100, "added": 10, "updated": 2},
+            "main": {
+                "filename": "new_house_transactions.csv",
+                "total_rows": 100,
+                "added": 10,
+                "updated": 2,
+            },
             "nearby": {
                 "filename": "new_house_transactions_nearby_sectors.csv",
                 "total_rows": 100,
                 "added": 10,
                 "updated": 2,
             },
-            "pre": {"filename": "pre_owned_house_transactions.csv", "total_rows": 100, "added": 10, "updated": 2},
+            "pre": {
+                "filename": "pre_owned_house_transactions.csv",
+                "total_rows": 100,
+                "added": 10,
+                "updated": 2,
+            },
         },
         pd.DataFrame(
             {
@@ -249,9 +259,21 @@ def test_upload_raw_success(mock_invalidate, mock_process, client):
     )
 
     files = {
-        "main": ("new_house_transactions.csv", b"month,sector\n2024-01-01,1", "text/csv"),
-        "nearby": ("new_house_transactions_nearby_sectors.csv", b"month,sector\n2024-01-01,1", "text/csv"),
-        "pre": ("pre_owned_house_transactions.csv", b"month,sector\n2024-01-01,1", "text/csv"),
+        "main": (
+            "new_house_transactions.csv",
+            b"month,sector\n2024-01-01,1",
+            "text/csv",
+        ),
+        "nearby": (
+            "new_house_transactions_nearby_sectors.csv",
+            b"month,sector\n2024-01-01,1",
+            "text/csv",
+        ),
+        "pre": (
+            "pre_owned_house_transactions.csv",
+            b"month,sector\n2024-01-01,1",
+            "text/csv",
+        ),
     }
     response = client.post("/api/v1/upload/raw", files=files)
 

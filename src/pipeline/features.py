@@ -101,7 +101,6 @@ def assign_regime(month):
 
 
 def build_sector_profile(df_train_fold):
-
     profile = df_train_fold.groupby("sector")[TARGET_LOG].agg(["mean", "std"]).reset_index()
     profile["cv"] = profile["std"] / (profile["mean"] + 1)
 
@@ -189,7 +188,6 @@ def create_training_features(
     rolling_windows=[3, 6, 12],
     keep_nan=True,
 ):
-
     df = df_in.copy()
     df = df.sort_values(["sector", "date"]).reset_index(drop=True)
 
@@ -300,7 +298,6 @@ def create_training_features(
 
     # Fill NA
     if not keep_nan:
-
         feature_cols = [c for c in df.columns if c != target_col]
 
         df[feature_cols] = df.groupby("sector")[feature_cols].ffill().bfill().fillna(0)

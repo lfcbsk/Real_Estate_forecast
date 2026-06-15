@@ -27,12 +27,7 @@ from src.api.schemas import (
     UploadResponse,
 )
 from src.monitoring.detect_drift import detect_data_drift
-from src.pipeline.data_store import (
-    get_train_dir,
-    load_merged_training_data,
-    process_raw_upload,
-    read_upload_bytes,
-)
+from src.pipeline.data_store import get_train_dir, load_merged_training_data, process_raw_upload, read_upload_bytes
 from src.pipeline.predict import forecast_next_year
 from src.utils.config import load_config
 
@@ -401,7 +396,6 @@ async def get_metrics(run_id: Optional[str] = Query(None, description="MLflow ru
 async def get_drift_report(reference_period: Optional[str] = Query(None, description="Reference period")):
     """Get drift detection report."""
     try:
-
         train_data = get_train_data()
         if train_data is None:
             return DriftReport(

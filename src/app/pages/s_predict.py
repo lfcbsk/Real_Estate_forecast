@@ -14,12 +14,14 @@ from src.app.utils import (
 st.markdown(APP_CSS, unsafe_allow_html=True)
 
 st.title("📤 Upload & Predict")
-st.markdown("""
+st.markdown(
+    """
 Upload **3 raw competition CSV files**. New rows are **merged into** `data/train/` —
 duplicate `(month, sector)` keys are **overwritten** with the latest upload.
 
 Then the app runs: **merge → feature engineering → load ONNX model → predict**.
-""")
+"""
+)
 
 st.markdown(
     "<div class='upload-hint'>"
@@ -91,7 +93,10 @@ if all_uploaded and st.button("🚀 Merge, Process & Predict", type="primary", u
 
             st.success("Raw data saved to `data/train/` (append + overwrite duplicates).")
 
-            st.markdown("<div class='section-header'>CSV Update Summary</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='section-header'>CSV Update Summary</div>",
+                unsafe_allow_html=True,
+            )
             sc1, sc2, sc3 = st.columns(3)
             for col, key in zip([sc1, sc2, sc3], ["main", "nearby", "pre"]):
                 s = save_stats[key]
@@ -152,9 +157,11 @@ elif not all_uploaded:
 
 st.divider()
 with st.expander("ℹ️ How data is stored"):
-    st.markdown("""
+    st.markdown(
+        """
 1. Each upload is **appended** to the matching file under `data/train/`.
 2. If `(month, sector)` already exists, the **new row replaces** the old one.
 3. On the next forecast or orchestration run, the updated CSVs are used automatically.
 4. No separate database — **CSV files are the source of truth**.
-        """)
+        """
+    )

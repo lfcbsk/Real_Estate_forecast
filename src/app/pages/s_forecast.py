@@ -46,7 +46,10 @@ if st.button("📊 Generate Forecast", type="primary", use_container_width=True)
 
             st.success(f"Generated {len(forecast_df):,} predictions for {n_months} month(s).")
 
-            st.markdown("<div class='section-header'>Forecast Chart</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='section-header'>Forecast Chart</div>",
+                unsafe_allow_html=True,
+            )
 
             chart_df = forecast_df
             if forecast_df["sector"].nunique() > 15:
@@ -60,18 +63,28 @@ if st.button("📊 Generate Forecast", type="primary", use_container_width=True)
                 y="pred_amount",
                 color="sector",
                 markers=True,
-                labels={"pred_amount": "Predicted Amount", "date": "Date", "sector": "Sector"},
+                labels={
+                    "pred_amount": "Predicted Amount",
+                    "date": "Date",
+                    "sector": "Sector",
+                },
             )
             fig.update_layout(template="plotly_white", height=480)
             st.plotly_chart(fig, use_container_width=True)
 
-            st.markdown("<div class='section-header'>Total Volume by Month</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='section-header'>Total Volume by Month</div>",
+                unsafe_allow_html=True,
+            )
             monthly = forecast_df.groupby("date", as_index=False)["pred_amount"].sum()
             fig2 = px.bar(monthly, x="date", y="pred_amount")
             fig2.update_layout(template="plotly_white", height=380)
             st.plotly_chart(fig2, use_container_width=True)
 
-            st.markdown("<div class='section-header'>Forecast Data</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='section-header'>Forecast Data</div>",
+                unsafe_allow_html=True,
+            )
             st.dataframe(
                 forecast_df.sort_values(["sector", "date"]).reset_index(drop=True),
                 use_container_width=True,

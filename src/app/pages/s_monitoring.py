@@ -50,7 +50,11 @@ def _get_mlflow_runs(limit: int = 30) -> pd.DataFrame:
         )
         rows = []
         for r in runs:
-            row = {"run_id": r.info.run_id, "start_time": r.info.start_time, "run_name": r.info.run_name}
+            row = {
+                "run_id": r.info.run_id,
+                "start_time": r.info.start_time,
+                "run_name": r.info.run_name,
+            }
             row.update(r.data.metrics)
             rows.append(row)
         df = pd.DataFrame(rows)
@@ -90,7 +94,10 @@ with st.sidebar:
     if health:
         st.markdown('<span class="badge badge-green">● Connected</span>', unsafe_allow_html=True)
     else:
-        st.markdown('<span class="badge badge-red">● Offline (local mode)</span>', unsafe_allow_html=True)
+        st.markdown(
+            '<span class="badge badge-red">● Offline (local mode)</span>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("<div class='section-header'>Data Files</div>", unsafe_allow_html=True)
     train_dir = get_train_dir()
@@ -157,7 +164,11 @@ with tab_perf:
         selected = st.multiselect("Metrics", available, default=available[:2] if available else [])
         if selected:
             fig = go.Figure()
-            colors = {"holdout_mae": "#3b82f6", "holdout_rmse": "#ef4444", "holdout_r2": "#10b981"}
+            colors = {
+                "holdout_mae": "#3b82f6",
+                "holdout_rmse": "#ef4444",
+                "holdout_r2": "#10b981",
+            }
             for m in selected:
                 fig.add_trace(
                     go.Scatter(

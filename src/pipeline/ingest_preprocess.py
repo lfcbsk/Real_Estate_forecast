@@ -91,7 +91,6 @@ def _report_missing(df: pd.DataFrame, label: str) -> None:
 
 
 def _handle_missing(df: pd.DataFrame) -> pd.DataFrame:
-
     df = df.copy()
 
     zero_cols = [c for c in df.columns if any(c.startswith(p) for p in _ZERO_FILL_PATTERNS) and c != TARGET_LOG]
@@ -184,7 +183,6 @@ def sort_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def split_train_test(df: pd.DataFrame, test_ratio: float = 0.2) -> Tuple[pd.DataFrame, pd.DataFrame]:
-
     df = sort_data(df)
 
     unique_dates = sorted(df["date"].unique())

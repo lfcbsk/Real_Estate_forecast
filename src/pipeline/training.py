@@ -10,11 +10,7 @@ from sklearn.model_selection import TimeSeriesSplit
 
 from src.models.retrain import retrain_model, save_artifacts, save_onnx_model
 from src.monitoring.reference import save_reference_dataset, save_reference_statistics
-from src.pipeline.evaluation import (
-    competition_score,
-    evaluate_holdout,
-    evaluate_regression,
-)
+from src.pipeline.evaluation import competition_score, evaluate_holdout, evaluate_regression
 from src.pipeline.features import (
     apply_zero_sector_rule,
     build_sector_profile,
@@ -162,7 +158,6 @@ def timeseries_cv(df_all, model, n_splits=N_SPLITS, zero_sectors=None, verbose=T
             run_id=mlflow_run.info.run_id,
         )
     if verbose:
-
         display_df = metrics_df[
             [
                 "Fold",
@@ -204,7 +199,6 @@ def timeseries_cv(df_all, model, n_splits=N_SPLITS, zero_sectors=None, verbose=T
 
 
 def catboost_objective(trial, df_all, zero_sectors, n_splits=N_SPLITS):
-
     bootstrap_type = trial.suggest_categorical("bootstrap_type", ["Bayesian", "Bernoulli"])
 
     params = {
@@ -412,7 +406,6 @@ def run_pipeline(df_train=None, tune=True, n_trials=N_TRIALS):
 
 
 if __name__ == "__main__":
-
     results = run_pipeline(tune=True, n_trials=N_TRIALS)
 
     print("\n" + "=" * 80)

@@ -7,9 +7,7 @@ from src.models.model_config import ModelConfig
 
 
 class ModelRegistry:
-
     def __init__(self):
-
         self.session = ort.InferenceSession(str(ModelConfig.MODEL_PATH))
 
         self.input_name = self.session.get_inputs()[0].name
@@ -24,12 +22,10 @@ class ModelRegistry:
 
     @staticmethod
     def _load_pickle(path):
-
         with open(path, "rb") as f:
             return pickle.load(f)
 
     def predict(self, X):
-
         X = X[self.features].fillna(0).astype(np.float32)
 
         pred = self.session.run(None, {self.input_name: X.values})[0]

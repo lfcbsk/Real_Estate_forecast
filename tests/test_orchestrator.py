@@ -8,12 +8,7 @@ import pytest
 
 from src.monitoring.detect_drift import detect_data_drift
 from src.monitoring.log_report import evaluate_retrain_decision
-from src.pipeline.orchestrator import (
-    RegistryGate,
-    evaluate_for_registry,
-    run_orchestration,
-    should_retrain,
-)
+from src.pipeline.orchestrator import RegistryGate, evaluate_for_registry, run_orchestration, should_retrain
 
 
 @pytest.fixture
