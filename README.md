@@ -328,8 +328,8 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 git clone https://github.com/lfcbsk/RealEssate_forecast.git
 cd RealEssate_forecast
 
-uv python install 3.10
-uv venv --python 3.10
+uv python install 3.11
+uv venv --python 3.11
 uv pip install -e ".[dev]"
 ```
 
