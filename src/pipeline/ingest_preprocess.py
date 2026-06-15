@@ -1,9 +1,16 @@
+import sys
 from typing import Tuple
 
 import numpy as np
 import pandas as pd
 
 from src.utils.config import load_config
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(errors="replace")
+    except (AttributeError, OSError, ValueError):
+        pass
 
 cfg = load_config()
 

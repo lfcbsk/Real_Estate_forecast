@@ -46,6 +46,21 @@ dependencies = [
     # Dashboard
     "streamlit==1.28.2",
     "plotly==5.17.0",
+
+    # mlflow imports pkg_resources at runtime
+    "setuptools==69.5.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+    "unit: unit tests",
+    "integration: integration tests",
+    "e2e: end-to-end tests",
 ]
 
 [project.optional-dependencies]
