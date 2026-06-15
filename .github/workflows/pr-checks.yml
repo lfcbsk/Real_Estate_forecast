@@ -85,7 +85,7 @@ jobs:
 
       - name: Install linters
         run: |
-          uv pip install --system flake8 black mypy isort
+          uv pip install --system -e ".[dev]"
 
       - name: Run flake8
         run: |
