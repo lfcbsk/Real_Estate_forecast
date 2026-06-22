@@ -17,9 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY docker/requirements.txt requirements.txt
-RUN pip install --upgrade pip setuptools==69.5.1 wheel \
-    && pip install --prefer-binary -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN pip install uv \
+    && uv sync --frozen --no-dev
 
 COPY . .
 

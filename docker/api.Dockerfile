@@ -18,9 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install locked dependencies first (cached layer; no setuptools build needed)
-COPY docker/requirements.txt requirements.txt
-RUN pip install --upgrade pip setuptools==69.5.1 wheel \
-    && pip install --prefer-binary -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN pip install uv \
+    && uv sync --frozen --no-dev
 
 COPY . .
 
