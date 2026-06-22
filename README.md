@@ -1,9 +1,8 @@
 # RealEssate Forecast (End - to End project)
 
-End-to-end **MLOps pipeline** for the Kaggle competition [**China Real Estate Demand Prediction**](https://www.kaggle.com/competitions/china-real-estate-demand-prediction). The system forecasts **monthly new-house transaction volumes** across **96 property sectors**, packages the model for production (**ONNX**), and exposes it through **FastAPI**, **Streamlit**,automate **drift monitoring** with **Mlfow**, **Grafana**, **CI/CD** and contain it by ** Docker**.
+End-to-end **MLOps pipeline** for the Kaggle competition [**China Real Estate Demand Prediction**](https://www.kaggle.com/competitions/china-real-estate-demand-prediction). The system forecasts **monthly new-house transaction volumes** across **96 property sectors**, packages the model for production (**ONNX**), and exposes it through **FastAPI**, **Streamlit**,automate **drift monitoring** with **Mlfow**, **Grafana**, **CI/CD** and contain it by **Docker**.
 
 
-Demo of streamlit web: [Forecast]( https://realestateforecast-mdeeacuhemmtfwlog33stu.streamlit.app/ )
 ---
 
 ## Table of contents
@@ -20,7 +19,6 @@ Demo of streamlit web: [Forecast]( https://realestateforecast-mdeeacuhemmtfwlog3
 9. [API reference](#9-api-reference)
 10. [Configuration](#10-configuration)
 11. [Tests & CI/CD](#11-tests--cicd)
-12. [Run command using Makefile](#13-quick-start-with-makefile)
 
 
 ---
@@ -85,7 +83,9 @@ The official **Competition Score** (implemented in `src/pipeline/evaluation.py`)
 1. **Stage 1 — bad-rate gate:** if more than 30% of predictions have APE > 100%, score = **0**.
 2. **Stage 2 — refined MAPE:** on remaining "good" predictions:
 
-$$\text{Score} = 1 - \frac{\text{MAPE}_{\text{good}}}{\text{good\_rate}}$$
+$$
+\mathrm{Score}=1-\frac{\mathrm{MAPE}_{\mathrm{good}}}{\mathrm{good\_rate}}
+$$
 
 Higher is better (max ≈ 1.0). This metric penalizes catastrophic errors more than R², which is why **Competition Score is the primary metric** for model selection and registry gates.
 
